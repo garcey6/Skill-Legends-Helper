@@ -32,7 +32,7 @@ exit /b 1
 
 :run
 echo 正在启动浮窗助手...
-echo 控制台会显示实际识别/隐藏/退出快捷键（F8 被占用时会自动换键）。
+echo 控制台会显示实际识别/隐藏/退出快捷键（Alt+C 被占用时会自动换键）。
 "%PYTHON_EXE%" %PYTHON_ARGS% agent.py --port 8777
 echo.
 echo 浮窗已停止。

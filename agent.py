@@ -2,7 +2,7 @@
 
 Run with:
     python agent.py
-    python agent.py --capture-key F8 --port 8777
+    python agent.py --capture-key Alt+C --port 8777
 """
 from __future__ import annotations
 
@@ -341,8 +341,8 @@ class Agent:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="选技大乱斗 · 浮窗助手")
-    parser.add_argument("--capture-key", default="F8", help="识别快捷键，默认 F8")
-    parser.add_argument("--toggle-key", default="F9", help="显示/隐藏快捷键，默认 F9")
+    parser.add_argument("--capture-key", default="Alt+C", help="识别快捷键，默认 Alt+C")
+    parser.add_argument("--toggle-key", default="Alt+X", help="显示/隐藏快捷键，默认 Alt+X")
     parser.add_argument("--quit-key", default="Ctrl+Alt+Q", help="退出快捷键，默认 Ctrl+Alt+Q")
     parser.add_argument("--port", type=int, default=8777, help="网页控制台端口，默认 8777")
     parser.add_argument("--alpha", type=float, default=0.97, help="浮窗不透明度")

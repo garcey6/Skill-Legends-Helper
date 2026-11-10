@@ -48,6 +48,8 @@ class HotkeyParseTest(unittest.TestCase):
         self.assertEqual(mods, 3)
         self.assertEqual(vk, ord("Q"))
         self.assertEqual(parse_combo("F8"), (0, 0x77))
+        self.assertEqual(parse_combo("Alt+C"), (1, ord("C")))
+        self.assertEqual(parse_combo("Alt+X"), (1, ord("X")))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "checks": 2695,
+  "hero_rows_compared": 60,
+  "card_rows_compared": 156,
+  "school_count": 13,
+  "build_count": 60,
+  "markdown_files": 79,
+  "local_links_checked": 259,
+  "knowledge_base": {
+    "executed": true,
+    "guides_loaded": 60,
+    "index_chunks": 1020,
+    "heroes_queried": 60
+  },
+  "failures": [],
+  "limits": [
+    "不证明实战胜率或全版本最优",
+    "未测试真实游戏、桌面置顶和全局快捷键",
+    "未对未知品阶倍率作推定"
+  ]
+}

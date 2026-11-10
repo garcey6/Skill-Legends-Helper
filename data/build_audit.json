@@ -1,0 +1,41 @@
+{
+  "as_of": "2026-11-09",
+  "repository": "https://github.com/garcey6/Skill-Legends-Helper",
+  "commit": "2922416928acb75c3059f9aae677d81ea63bfd6b",
+  "hero_count": 60,
+  "unique_cards": 156,
+  "school_count": 13,
+  "rarities": {
+    "普通": 104,
+    "稀有": 39,
+    "传说": 13
+  },
+  "dual_school_cards": 78,
+  "memberships": 234,
+  "undefined_template_cards": [
+    110,
+    111,
+    114,
+    115,
+    116,
+    157,
+    158,
+    178,
+    191,
+    241,
+    247
+  ],
+  "grade_multipliers": "not_provided_not_inferred",
+  "guide_count": 60,
+  "source_hashes": {
+    "heroes.json": "f906be7baaf089ffeca1ebcb76af328e33043fe833e88ae6fb8cef59d1832bc2",
+    "cards.json": "2aa4590f482f5168efbe2a6841b14cd4f638ce55d1bb1deb0101da6e405e1266",
+    "schools.json": "5026564d2c226332c3962831d239619fe92762b1a9db6e2e5cd22b929385ea1c",
+    "rules.json": "46f8088c923393003644f1b7c3392ebf8bb2ffb3bb7818bf1f1d756e93833572",
+    "游戏规则.txt": "8528a0357e5dae271a371066ce0cd681fb0c63fc6f94783a42d8ee07cadfaddc",
+    "卡牌库.xlsx": "83d1b37af7883d50cb6eca7860e7f036de512762656e705d0aa3ad533d971ee9",
+    "选技英雄数据.xlsx": "64d51e2751aa8efbba175633fef2b034b901f877df5f84afca3c163d27410984"
+  },
+  "gameplay_testing": "not_run",
+  "score_model_changed": false
+}

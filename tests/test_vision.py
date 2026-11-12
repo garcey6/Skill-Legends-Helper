@@ -45,6 +45,22 @@ class RecognizerTest(unittest.TestCase):
         for school in result["schools"]["banned"]:
             self.assertTrue(school["banned"])
 
+    def test_diagnostics_for_sample(self):
+        result = self.recognizer.analyze(Image.open(SAMPLE))
+        diag = result["diagnostics"]
+        self.assertTrue(diag["panel_found"])
+        self.assertEqual(diag["nameplates"], 5)
+        self.assertEqual(diag["matched_heroes"], 3)
+        self.assertEqual(diag["schools"], 13)
+
+    def test_missing_panel_does_not_fake_schools(self):
+        result = self.recognizer.analyze(Image.new("RGB", (1600, 900), (10, 12, 16)))
+        self.assertFalse(result["diagnostics"]["panel_found"])
+        self.assertEqual(result["diagnostics"]["schools"], 0)
+        self.assertEqual(result["schools"]["enabled"], [])
+        self.assertEqual(result["schools"]["banned"], [])
+        self.assertTrue(any("未能定位流派面板" in w for w in result["warnings"]))
+
 
 if __name__ == "__main__":
     unittest.main()

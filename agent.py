@@ -271,17 +271,26 @@ class Agent:
             if len(heroes) < 3:
                 warning = "有英雄未识别"
             if len(heroes) < 2 or not enabled:
-                hint = "请确认画面停在开局选人界面，且 3 个英雄和右下角面板完整可见。"
+                diag = result.get("diagnostics") or {}
+                if not diag.get("panel_found", True):
+                    message = "当前画面没有流派面板。"
+                    hint = (
+                        "没有找到右下角 13 流派面板和 5 个禁用红圈；如果画面只有 3 个英雄和 8 个底栏图标，"
+                        "这一屏无法判断 8 启用 / 5 禁用。请等完整选人界面出现后再按 %s。" % self.capture_key
+                    )
+                elif len(heroes) < 2:
+                    message = "英雄头像没有匹配。"
+                    hint = (
+                        "检测到流派面板，但只匹配到 %d/3 个英雄。自动识别目前只内置 3 个头像模板，"
+                        "请到网页版手动选择并学习新英雄。" % len(heroes)
+                    )
+                else:
+                    message = "没有识别到完整的英雄/流派信息。"
+                    hint = "请确认画面停在开局选人界面，且 3 个英雄和右下角面板完整可见。"
                 if not self.args.no_save_capture:
                     hint += "截图已保存到 data/captures/last.png。"
                 self.hud.show(
-                    render_error(
-                        "没有识别到完整的英雄/流派信息。",
-                        hint,
-                        self.capture_key,
-                        self.toggle_key,
-                        self.quit_key,
-                    ),
+                    render_error(message, hint, self.capture_key, self.toggle_key, self.quit_key),
                     hwnd,
                 )
                 return

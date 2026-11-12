@@ -382,6 +382,7 @@ class Recognizer:
         arr = np.asarray(im, dtype=np.int16)
 
         panel = self._detect_panel(im)
+        panel_found = panel is not None
         if panel is None:
             warnings.append("未能定位流派面板，请手动确认启用/禁用流派。")
             panel = (
@@ -393,7 +394,7 @@ class Recognizer:
 
         school_slots: List[Dict[str, Any]] = []
         grid_method = "none"
-        if self.label_templates:
+        if panel_found and self.label_templates:
             school_slots, grid_method = self._match_schools(im, panel)
         if not self.label_templates:
             warnings.append("缺少流派标签模板，请先运行 tools/build_templates.py。")
@@ -463,6 +464,12 @@ class Recognizer:
         annotated = iops.draw_boxes(im, boxes)
 
         payload: Dict[str, Any] = {
+            "diagnostics": {
+                "panel_found": panel_found,
+                "nameplates": len(plates),
+                "matched_heroes": sum(1 for h in heroes if h["name"]),
+                "schools": len(school_slots),
+            },
             "image": {
                 "width": original_size[0],
                 "height": original_size[1],

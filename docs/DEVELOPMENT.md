@@ -24,7 +24,7 @@ python -m app.cli samples/draft_001.png
 python -m unittest discover -s tests -t . -v
 ```
 
-当前共 **33 项**，覆盖：
+当前共 **35 项**，覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；

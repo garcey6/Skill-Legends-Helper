@@ -47,7 +47,7 @@
 ## 常见问题
 
 **按识别键没反应？**  
-先看控制台第一屏的「实际快捷键」，可能被游戏或其他软件占用并自动换键。详见 [TROUBLESHOOTING](docs/TROUBLESHOOTING.md)。
+先看控制台第一屏的「实际快捷键」，可能被游戏或其他软件占用并自动换键；如果画面只有英雄和 8 个底栏图标、没有右下角 13 流派面板，也会识别不出。详见 [TROUBLESHOOTING](docs/TROUBLESHOOTING.md)。
 
 **浮窗黑屏或不显示？**  
 九成是游戏用了独占全屏，改成「无边框窗口」或窗口模式。详见 [TROUBLESHOOTING](docs/TROUBLESHOOTING.md)。

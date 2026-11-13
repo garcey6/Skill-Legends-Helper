@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import json
 import os
 import queue
 import sys
@@ -28,9 +29,13 @@ capture.enable_dpi_awareness()
 
 from app.config import BASE_DIR  # noqa: E402
 from app.kb.recommend import Advisor  # noqa: E402
+from app.live.sampler import LiveSampler  # noqa: E402
+from app.live.win32src import WindowFrameSource  # noqa: E402
 from app.overlay.hotkey import MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, MOD_WIN, HotkeyManager, parse_combo  # noqa: E402
 from app.overlay.hud import Hud, render_error, render_loading, render_result  # noqa: E402
+from app.vision.glyphs import GlyphMatcher  # noqa: E402
 from app.vision.recognizer import Recognizer  # noqa: E402
+from app.vision.schools import SchoolMatcher  # noqa: E402
 
 CAPTURE_DIR = BASE_DIR / "data" / "captures"
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -133,6 +138,16 @@ class Agent:
         )
         self.recognizer = Recognizer()
         self.advisor = Advisor()
+        self.live_queue: "queue.Queue[Any]" = queue.Queue()
+        self.live_sampler: Optional[LiveSampler] = None
+        self.live_source: Optional[WindowFrameSource] = None
+        self.live_layout: Dict[str, Any] = {}
+        self.live_school_matcher = None
+        self.live_glyph_matcher = None
+        self.live_school_by_name: Dict[str, str] = {}
+        self._live_has_result = False
+        self._auto_hud_hidden = False
+        self._capture_gate = threading.Event()
         self.events: "queue.Queue[str]" = queue.Queue()
         self.hotkeys = HotkeyManager(
             self.events,
@@ -154,6 +169,71 @@ class Agent:
         self._closed = False
 
     # ------------------------------------------------------------------ setup
+    def start_auto(self) -> None:
+        if self.args.no_auto:
+            return
+        try:
+            recognize_dir = BASE_DIR / "data" / "recognize"
+            self.live_layout = json.loads((recognize_dir / "layout.json").read_text(encoding="utf-8"))
+            school_data = json.loads((recognize_dir / "schools_chroma.json").read_text(encoding="utf-8"))
+            glyph_data = json.loads((recognize_dir / "glyphs.json").read_text(encoding="utf-8"))
+            names = [h["name"] for h in self.advisor.heroes]
+            self.live_school_matcher = SchoolMatcher(
+                school_data, float(self.live_layout.get("margin_min", 0.012))
+            )
+            self.live_glyph_matcher = GlyphMatcher(glyph_data, names)
+            self.live_school_by_name = {s["name"]: s["id"] for s in self.advisor.schools}
+        except Exception as exc:
+            print("自动识别不可用：%s" % exc, flush=True)
+            return
+        self.live_source = WindowFrameSource()
+        self.live_sampler = LiveSampler(
+            self.live_source,
+            self.live_layout,
+            self.live_school_matcher,
+            self.live_glyph_matcher,
+            lambda state, result: self.live_queue.put((state, result)),
+            before_capture=self._before_live_capture,
+            after_capture=self._after_live_capture,
+        )
+        self.live_sampler.start()
+        print("自动识别已开启：进入选人界面后无需按键。", flush=True)
+
+    def _before_live_capture(self) -> None:
+        """Hide the overlay before the 5-frame ROI aggregate (Tk thread hop)."""
+        if not self.hud.visible:
+            return
+        self._capture_gate.clear()
+        try:
+            self.hud.root.after(0, self._hide_live_for_capture)
+        except Exception:
+            self._capture_gate.set()
+            return
+        self._capture_gate.wait(0.30)
+
+    def _hide_live_for_capture(self) -> None:
+        if self.hud.visible:
+            self.hud.hide()
+            self._auto_hud_hidden = True
+        self._capture_gate.set()
+
+    def _after_live_capture(self) -> None:
+        try:
+            self.hud.root.after(0, self._restore_live_after_capture)
+        except Exception:
+            pass
+
+    def _restore_live_after_capture(self) -> None:
+        if not self._auto_hud_hidden:
+            return
+        self._auto_hud_hidden = False
+        if self.hud.visible:
+            return
+        if self.hud.last_source is not None:
+            self.hud.show(self.hud.last_source, self.last_game_hwnd)
+        else:
+            self.hud.show_ready(self.server_url)
+
     def start_server(self) -> None:
         if self.args.no_server:
             return
@@ -191,6 +271,7 @@ class Agent:
         self.start_server()
         if not self.args.no_ready:
             self.hud.show_ready(self.server_url)
+        self.start_auto()
         self.hud.root.after(50, self.poll)
         try:
             self.hud.root.mainloop()
@@ -214,8 +295,51 @@ class Agent:
                     return
         except queue.Empty:
             pass
+        try:
+            while True:
+                state, result = self.live_queue.get_nowait()
+                self._handle_live(state, result)
+                if not self.running:
+                    return
+        except queue.Empty:
+            pass
         if self.running:
             self.hud.root.after(50, self.poll)
+
+    def _handle_live(self, state: str, result: Optional[Dict[str, Any]]) -> None:
+        if state in ("IDLE", "WATCHING", "STALE") and self._live_has_result:
+            self._live_has_result = False
+            if self.hud.visible:
+                self.hud.show_ready(self.server_url)
+            return
+        if not result or state != "READY":
+            return
+        schools = result.get("schools") or {}
+        if schools.get("status") != "ok":
+            return
+        candidates = (result.get("heroes") or {}).get("candidates") or []
+        hero_names = [str(c.get("name")) for c in candidates if c.get("name")]
+        if len(hero_names) < 2:
+            return
+        if not self.hud.visible:
+            return
+        enabled = [self.live_school_by_name[n] for n in schools.get("enabled", []) if n in self.live_school_by_name]
+        banned = [self.live_school_by_name[n] for n in (schools.get("banned") or []) if n in self.live_school_by_name]
+        if len(enabled) != 8 or len(banned) != 5:
+            return
+        warning = "有英雄未识别" if len(hero_names) < 3 else ""
+        rec = self.advisor.recommend(hero_names, enabled, banned)
+        image = render_result(rec, None, warning, self.capture_key, self.toggle_key, self.quit_key)
+        hwnd = self.live_source.hwnd if self.live_source is not None else self.last_game_hwnd
+        self.last_game_hwnd = hwnd
+        self.hud.show(image, hwnd)
+        self._live_has_result = True
+        top = (rec.get("recommendations") or [{}])[0]
+        print(
+            "[live] %s -> %s %.1f"
+            % (" / ".join(hero_names), top.get("name", "?"), float(top.get("score", 0))),
+            flush=True,
+        )
 
     def dispatch(self, action: str) -> None:
         now = time.monotonic()
@@ -224,7 +348,10 @@ class Agent:
             return
         self._last_dispatch[action] = now
         if action == "capture":
-            self.capture_and_show()
+            if self.live_sampler is not None:
+                self.live_sampler.force()
+            else:
+                self.capture_and_show()
         elif action == "toggle":
             self.hud.toggle(self.last_game_hwnd)
         elif action == "quit":
@@ -337,6 +464,8 @@ class Agent:
             return
         self._closed = True
         self.hotkeys.stop()
+        if self.live_sampler is not None:
+            self.live_sampler.stop()
         if self.httpd is not None:
             try:
                 self.httpd.shutdown()
@@ -358,6 +487,7 @@ def main(argv=None) -> int:
     parser.add_argument("--hud-scale", type=float, default=0.0, help="浮窗缩放；0 表示按屏幕宽度自动")
     parser.add_argument("--no-server", action="store_true", help="不启动网页控制台")
     parser.add_argument("--no-ready", action="store_true", help="启动时不显示提示卡")
+    parser.add_argument("--no-auto", action="store_true", help="关闭自动识别（只保留手动识别键）")
     parser.add_argument("--no-save-capture", action="store_true", help="不保存最近一次截图")
     args = parser.parse_args(argv)
     if not (0.5 <= args.alpha <= 1.0):

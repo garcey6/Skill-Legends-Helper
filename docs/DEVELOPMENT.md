@@ -16,6 +16,15 @@ python agent.py --no-server
 
 # 命令行分析一张截图
 python -m app.cli samples/draft_001.png
+
+# 自动识别层：回放离线帧
+python -m tools.live_recognize --replay samples/frames/draft_001 --pretty
+
+# 自动识别层：直接抓活窗口（需要标题匹配的游戏窗口）
+python -m tools.live_recognize --live --pretty
+
+# 录一段真实帧序列（需要游戏窗口）
+python tools/record_frames.py --out samples/frames/draft_004 --frames 30
 ```
 
 ## 测试
@@ -24,10 +33,11 @@ python -m app.cli samples/draft_001.png
 python -m unittest discover -s tests -t . -v
 ```
 
-当前共 **35 项**，覆盖：
+当前共 **40 项**，覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；
+- 自动识别层：色度流派、字模英雄、两套回放夹具、run 数不符降级、稳定性/中位数；
 - 攻略 frontmatter / 分段 / 60 篇加载；
 - 推荐排序、证据归属、核心被 ban 后分数下降、未知英雄兜底；
 - 核心卡选择、立绘/技能图标完整性；
@@ -51,7 +61,18 @@ python -m unittest discover -s tests -t . -v
 │  │  └─ hud.py              # Pillow 卡片渲染 + 置顶可拖动窗口
 │  ├─ vision/
 │  │  ├─ imageops.py
-│  │  └─ recognizer.py
+│  │  ├─ recognizer.py        # 旧的手动截图路径
+│  │  ├─ blobs.py             # run / 4 连通 / 名牌分组
+│  │  ├─ chroma.py            # 归一化色度
+│  │  ├─ schools.py           # 13 类色度 + 一对一约束
+│  │  ├─ glyphs.py            # 155 字闭集字模
+│  │  └─ pipeline.py          # ROI -> Result
+│  ├─ live/
+│  │  ├─ frame.py             # FrameSource / ROI / 状态
+│  │  ├─ win32src.py          # ROI-only GDI 抓帧
+│  │  ├─ replaysrc.py         # 回放 / 单图源
+│  │  ├─ stability.py         # diff / median / 指针粗检
+│  │  └─ sampler.py           # 采集线程 + 识别线程 + 队列
 │  ├─ kb/
 │  │  ├─ cards.py            # 卡牌加载 + 每英雄核心卡排序
 │  │  ├─ guides.py
@@ -73,19 +94,28 @@ python -m unittest discover -s tests -t . -v
 │  ├─ sources.json           # 社区/官方来源
 │  ├─ meta_stats.example.json
 │  ├─ source/                # 原始 xlsx / txt
-│  ├─ art/                   # 60 立绘 + 120 技能图标
-│  └─ templates/             # 识别模板 + 流派图标
+│  ├─ art/                   # 60 立绘 + 120 技能图标（仅显示）
+│  ├─ templates/             # 旧头像模板 + 流派图标
+│  └─ recognize/             # layout / schools_chroma / glyphs
 ├─ static/
 │  ├─ index.html / app.js / styles.css
 │  └─ library.html / library.js / library.css
-├─ samples/draft_001.png
+├─ samples/
+│  ├─ draft_001.png / window_draft.png
+│  └─ frames/draft_001 / draft_002   # 回放夹具
 ├─ tools/
 │  ├─ preview_draft.py       # 全屏示例
 │  ├─ import_game_data.py    # Excel/规则 → JSON
 │  ├─ import_art_assets.py   # 立绘/技能图标 → data/art
 │  ├─ build_guides.py        # 生成 60 篇攻略
 │  ├─ verify_guides.py       # 原表/链接/知识库核验
-│  └─ build_templates.py     # 从示例重建识别模板
+│  ├─ build_templates.py     # 旧头像模板
+│  ├─ build_school_templates.py  # 13 流派色度
+│  ├─ build_glyph_templates.py   # 155 字字模
+│  ├─ seed_glyphs_from_samples.py # 真实字模样例
+│  ├─ record_frames.py       # 录真实回放帧
+│  ├─ calibrate_thresholds.py    # margin 分布
+│  └─ live_recognize.py      # 自动识别 CLI
 ├─ docs/
 ├─ tests/
 └─ requirements.txt
@@ -125,13 +155,26 @@ python tools/import_art_assets.py --source "C:\Users\garcey\Desktop\选技图片
 - 处理「渣克鼠王 / 炼金术师 / 月影猎手」三处拼写差异；
 - 写入 `heroes.json` 的 `art / talent_icon / ultimate_icon`。
 
-### 识别模板
+### 识别模板（自动层）
 
 ```powershell
+# 13 流派色度（面板图标 + 内置示例帧的底部书包变体）
+python tools/build_school_templates.py
+
+# 155 字字模（Windows CJK 字体 6 个变体）
+python tools/build_glyph_templates.py
+
+# 从内置示例帧补真实字模（神秘法师/守财奴等）
+python tools/seed_glyphs_from_samples.py
+
+# 看当前回放的 margin 分布
+python tools/calibrate_thresholds.py --replay samples/frames/draft_002
+
+# 重建旧的 3 头像模板（只给网页/--no-auto 用）
 python tools/build_templates.py
 ```
 
-用内置示例截图重建 3 个英雄头像和 13 个流派模板。新增英雄识别模板需要在网页里手动学习，或扩展这个脚本。
+自动层的模板和阈值只在 `data/recognize/`；`data/templates/` 只服务旧路径。
 
 ## 运行时文件
 

@@ -21,7 +21,14 @@
   - 渣克鼠王 → 渣客鼠王
   - 炼金术师 → 炼金术士
   - 月影猎手 → 月隐猎手
-- **展示立绘不参与自动识别**。识别模板仍是 `data/templates/heroes/` 下的 147×224 游戏内截图，目前有 3 个。
+- **展示立绘不参与自动识别**。自动识别读 `data/recognize/glyphs.json` 的 16×16 汉字字模；旧的手动路径仍读 `data/templates/heroes/` 的 147×224 头像（3 个）。
+
+## 识别模板
+
+- `data/recognize/schools_chroma.json`：13 流派归一化色度，来源是 `data/templates/schools/*.png` 面板图标和内置示例帧底部书包的干净变体。
+- `data/recognize/glyphs.json`：60 个英雄名用到的 155 个汉字，16×16 灰度字模；由 Windows 自带的 SimHei / SimSun / Microsoft YaHei / Deng / STXiHei 渲染，加上两段示例帧真实切出的字模。
+- `data/recognize/layout.json`：两个 ROI、期望启用数、margin、稳定门和字模阈值。
+- `samples/frames/draft_001` / `draft_002`：离线回放夹具，用于无游戏回归。
 
 ## 攻略知识库
 

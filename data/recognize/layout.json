@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "reference_width": 1800,
+  "rois": {
+    "icons": [
+      0.18,
+      0.86,
+      0.88,
+      0.995
+    ],
+    "nameplates": [
+      0.02,
+      0.62,
+      0.35,
+      0.58
+    ]
+  },
+  "expected_enabled": 8,
+  "base_run_w": 55.0,
+  "base_half": 15.0,
+  "sat_th": 40,
+  "min_run_w": 20,
+  "margin_min": 0.012,
+  "stability": {
+    "n": 5,
+    "k": 3,
+    "thresh": 24,
+    "ratio": 0.02,
+    "timeout_ms": 800,
+    "frame_interval_ms": 15
+  },
+  "probe_hz": 15,
+  "glyphs": {
+    "bright_percentile": 72,
+    "min_area_scale": 80,
+    "min_height_ratio": 0.025,
+    "top_k": 5,
+    "size": 16
+  }
+}

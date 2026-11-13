@@ -60,11 +60,11 @@ python -c "import numpy, PIL, tkinter; print('依赖检查通过')"
 
 | 按键 | 作用 | 被占用时的常见回退 |
 | --- | --- | --- |
-| `Alt+C` | 识别当前画面并推荐 | `F6` |
+| `Alt+C` | 强制重新识别当前画面（正常自动识别，不需要按） | `F6` |
 | `Alt+X` | 显示 / 隐藏浮窗 | `F7` |
 | `Ctrl+Alt+Q` | 退出助手 | `Ctrl+Shift+Q` |
 
-快捷键是全局的，游戏在前台也能触发。被其他程序占用时会自动换键，**以控制台和浮窗显示的为准**。
+快捷键是全局的，游戏在前台也能触发。被其他程序占用时会自动换键，**以控制台和浮窗显示的为准**。自动识别默认开启；`--no-auto` 可关闭，只保留手动键。
 
 ## 命令行参数
 
@@ -75,7 +75,8 @@ python agent.py --capture-key Alt+C --toggle-key Alt+X --quit-key Ctrl+Alt+Q
 
 | 参数 | 默认 | 说明 |
 | --- | --- | --- |
-| `--capture-key` | `Alt+C` | 识别快捷键 |
+| `--no-auto` | 开 | 关闭自动识别，只用 `Alt+C` 手动 |
+| `--capture-key` | `Alt+C` | 强制重识别快捷键 |
 | `--toggle-key` | `Alt+X` | 显示 / 隐藏 |
 | `--quit-key` | `Ctrl+Alt+Q` | 退出 |
 | `--port` | `8777` | 网页控制台端口，占用时自动顺延 |

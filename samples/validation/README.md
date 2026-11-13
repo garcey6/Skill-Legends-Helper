@@ -4,8 +4,7 @@
 
 ## 文件
 
-- `window_case_01.png` / `window_case_02.png`：原始 2560×1600 桌面截图。
-- `case01_client.png` / `case02_client.png`：按窗口客户区近似裁出的验证图；裁切矩形见 `meta.json`。
+- `case01_client.png` / `case02_client.png`：按窗口客户区近似裁出的验证图；裁切矩形见 `meta.json`。原始桌面截图已剪枝删除，保留裁切后的验证图以减小仓库。
 - `meta.json`：3 个英雄的人工标注；流派没有右侧 13 面板，无法独立标注，因此 `schools=null`。
 
 ## 当前结果（OCR + 流派 A 后）

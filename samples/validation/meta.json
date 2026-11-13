@@ -3,7 +3,6 @@
   "cases": [
     {
       "name": "case01",
-      "full": "../window_case_01.png",
       "client": "case01_client.png",
       "client_rect_approx": [159, 191, 2290, 1375],
       "expected": {
@@ -14,7 +13,6 @@
     },
     {
       "name": "case02",
-      "full": "../window_case_02.png",
       "client": "case02_client.png",
       "client_rect_approx": [0, 32, 2560, 1515],
       "expected": {

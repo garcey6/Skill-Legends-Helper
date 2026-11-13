@@ -21,7 +21,7 @@
   - 渣克鼠王 → 渣客鼠王
   - 炼金术师 → 炼金术士
   - 月影猎手 → 月隐猎手
-- **展示立绘不参与自动识别**。自动识别读 `data/recognize/glyphs.json` 的 16×16 汉字字模；旧的手动路径仍读 `data/templates/heroes/` 的 147×224 头像（3 个）。
+- **展示立绘不参与自动识别**。自动识别主路径是 RapidOCR（`rapidocr_onnxruntime` 自带的检测/识别模型，本地推理），加 60 个英雄名的闭集校正；`data/recognize/glyphs.json` 的 16×16 字模只做 OCR 失败时的兜底。旧的手动路径仍读 `data/templates/heroes/` 的 147×224 头像（3 个）。
 
 ## 识别模板
 
@@ -30,9 +30,10 @@
   - 930 个来自 Windows 自带 6 个字体的渲染：SimHei、SimSun、Microsoft YaHei、Microsoft YaHei Bold、DengXian Bold、STXiHei；64px 渲染、裁 bbox、缩放 16×16、减均值除标准差。
   - 21 个（20 个不同字）来自两段示例帧真实切字：`samples/draft_001.png`（森林游侠/神秘法师/魔镜）和 `samples/window_draft.png`（守财奴/狂暴战将/精灵牧师）。
   - **没有游戏原字体**；`coverage=1.0` 只表示 155 字都有字体模板，不等于游戏字体完全一致。
+- `data/recognize/school_runes.json`：13 流派白色符文 24×24 掩码；基础来自 `data/templates/schools/*.png`，变体来自 `samples/draft_001.png` / `samples/window_draft.png` 的干净底部书包。
 - `data/recognize/layout.json`：两个 ROI、期望启用数、margin、稳定门和字模阈值。
 - `samples/frames/draft_001` / `draft_002`：离线回放夹具，用于无游戏回归。
-- `samples/validation/`：2026-11-13 新增的两张真实窗口验证帧，**只验证，不参与模板生成**；当前结果见该目录 README。
+- `samples/validation/`：2026-11-13 新增的两张真实窗口验证帧，用户选择 OCR 后作为 OCR/符文回归；当前结果见该目录 README。注意：OCR 后的符文阈值在这两帧上一起调过，不能把它们再当作独立 holdout。
 
 ## 攻略知识库
 

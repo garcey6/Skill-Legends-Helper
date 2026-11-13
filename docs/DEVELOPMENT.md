@@ -33,11 +33,11 @@ python tools/record_frames.py --out samples/frames/draft_004 --frames 30
 python -m unittest discover -s tests -t . -v
 ```
 
-当前共 **40 项**，覆盖：
+当前共 **43 项**，覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；
-- 自动识别层：色度流派、字模英雄、两套回放夹具、run 数不符降级、稳定性/中位数；
+- 自动识别层：色度流派 + 白色符文决胜、RapidOCR 英雄名 + 字模兜底、两套回放夹具、run 数不符降级、稳定性/中位数；
 - 攻略 frontmatter / 分段 / 60 篇加载；
 - 推荐排序、证据归属、核心被 ban 后分数下降、未知英雄兜底；
 - 核心卡选择、立绘/技能图标完整性；
@@ -65,7 +65,9 @@ python -m unittest discover -s tests -t . -v
 │  │  ├─ blobs.py             # run / 4 连通 / 名牌分组
 │  │  ├─ chroma.py            # 归一化色度
 │  │  ├─ schools.py           # 13 类色度 + 一对一约束
-│  │  ├─ glyphs.py            # 155 字闭集字模
+│  │  ├─ glyphs.py            # 155 字闭集字模（兜底）
+│  │  ├─ ocr.py               # RapidOCR 名牌检测/识别/闭集校正
+│  │  ├─ runes.py             # 白色符文掩码
 │  │  └─ pipeline.py          # ROI -> Result
 │  ├─ live/
 │  │  ├─ frame.py             # FrameSource / ROI / 状态
@@ -112,6 +114,7 @@ python -m unittest discover -s tests -t . -v
 │  ├─ build_templates.py     # 旧头像模板
 │  ├─ build_school_templates.py  # 13 流派色度
 │  ├─ build_glyph_templates.py   # 155 字字模
+│  ├─ build_school_runes.py      # 13 白色符文模板
 │  ├─ seed_glyphs_from_samples.py # 真实字模样例
 │  ├─ record_frames.py       # 录真实回放帧
 │  ├─ calibrate_thresholds.py    # margin 分布
@@ -161,8 +164,11 @@ python tools/import_art_assets.py --source "C:\Users\garcey\Desktop\选技图片
 # 13 流派色度（面板图标 + 内置示例帧的底部书包变体）
 python tools/build_school_templates.py
 
-# 155 字字模（Windows CJK 字体 6 个变体）
+# 155 字字模（Windows CJK 字体 6 个变体；OCR 兜底）
 python tools/build_glyph_templates.py
+
+# 13 白色符文模板（流派 A 决胜）
+python tools/build_school_runes.py
 
 # 从内置示例帧补真实字模（神秘法师/守财奴等）
 python tools/seed_glyphs_from_samples.py

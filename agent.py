@@ -34,6 +34,7 @@ from app.live.win32src import WindowFrameSource  # noqa: E402
 from app.overlay.hotkey import MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, MOD_WIN, HotkeyManager, parse_combo  # noqa: E402
 from app.overlay.hud import Hud, render_error, render_loading, render_result  # noqa: E402
 from app.vision.glyphs import GlyphMatcher  # noqa: E402
+from app.vision.ocr import RapidOcrNameMatcher  # noqa: E402
 from app.vision.recognizer import Recognizer  # noqa: E402
 from app.vision.schools import SchoolMatcher  # noqa: E402
 
@@ -144,6 +145,7 @@ class Agent:
         self.live_layout: Dict[str, Any] = {}
         self.live_school_matcher = None
         self.live_glyph_matcher = None
+        self.live_ocr_matcher = None
         self.live_school_by_name: Dict[str, str] = {}
         self._live_has_result = False
         self._auto_hud_hidden = False
@@ -177,12 +179,19 @@ class Agent:
             self.live_layout = json.loads((recognize_dir / "layout.json").read_text(encoding="utf-8"))
             school_data = json.loads((recognize_dir / "schools_chroma.json").read_text(encoding="utf-8"))
             glyph_data = json.loads((recognize_dir / "glyphs.json").read_text(encoding="utf-8"))
+            runes_path = recognize_dir / "school_runes.json"
+            rune_data = json.loads(runes_path.read_text(encoding="utf-8")) if runes_path.exists() else None
             names = [h["name"] for h in self.advisor.heroes]
             self.live_school_matcher = SchoolMatcher(
-                school_data, float(self.live_layout.get("margin_min", 0.012))
+                school_data,
+                float(self.live_layout.get("margin_min", 0.012)),
+                runes=rune_data,
             )
             self.live_glyph_matcher = GlyphMatcher(glyph_data, names)
+            self.live_ocr_matcher = RapidOcrNameMatcher(names)
             self.live_school_by_name = {s["name"]: s["id"] for s in self.advisor.schools}
+            if not self.live_ocr_matcher.available:
+                print("OCR 不可用，改用字模兜底：%s" % self.live_ocr_matcher.error, flush=True)
         except Exception as exc:
             print("自动识别不可用：%s" % exc, flush=True)
             return
@@ -193,6 +202,7 @@ class Agent:
             self.live_school_matcher,
             self.live_glyph_matcher,
             lambda state, result: self.live_queue.put((state, result)),
+            ocr_matcher=self.live_ocr_matcher,
             before_capture=self._before_live_capture,
             after_capture=self._after_live_capture,
         )

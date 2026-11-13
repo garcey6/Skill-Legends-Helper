@@ -10,8 +10,11 @@ from PIL import Image
 
 from app.kb.recommend import Advisor
 from app.live.stability import diff_ratio, is_still, median_stack
+from app.vision.blobs import segment_runs
+from app.vision.chroma import chroma
 from app.vision.glyphs import GlyphMatcher
 from app.vision.pipeline import build_result, recognize_rois
+from app.vision.runes import rune_feature
 from app.vision.schools import SchoolMatcher
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -76,6 +79,33 @@ class LiveRecognitionTest(unittest.TestCase):
             [c["name"] for c in rec["heroes"]["candidates"]],
             ["守财奴", "狂暴战将", "精灵牧师"],
         )
+
+    def test_rune_tiebreak_resolves_life(self) -> None:
+        runes_path = ROOT / "data" / "recognize" / "school_runes.json"
+        if not runes_path.exists():
+            self.skipTest("rune templates missing")
+        runes = json.loads(runes_path.read_text(encoding="utf-8"))
+        matcher = SchoolMatcher(SCHOOLS, float(LAYOUT.get("margin_min", 0.012)), runes=runes)
+        for filename in ("case01_client.png", "case02_client.png"):
+            arr = np.asarray(
+                Image.open(ROOT / "samples" / "validation" / filename).convert("RGB"),
+                dtype=np.uint8,
+            )
+            h, w = arr.shape[:2]
+            icons = LAYOUT["rois"]["icons"]
+            crop = arr[int(h * icons[2]):int(h * icons[3]), int(w * icons[0]):int(w * icons[1])]
+            runs = segment_runs(crop, (0, 1, 0, 1), LAYOUT["sat_th"], LAYOUT["min_run_w"])
+            self.assertEqual(len(runs), 8)
+            scale = float(np.median([r["w"] for r in runs])) / LAYOUT["base_run_w"]
+            half = max(4, int(LAYOUT["base_half"] * scale))
+            rh = max(8, int(np.median([r["w"] for r in runs]) * 0.55))
+            cy = int(np.median([r["cy"] for r in runs]))
+            vectors = [chroma(crop, int(r["cx"]), cy, half) for r in runs]
+            rune_vectors = [rune_feature(crop, int(r["cx"]), cy, rh) for r in runs]
+            result = matcher.match(vectors, rune_vectors)
+            self.assertEqual(result["status"], "ok", filename)
+            self.assertIn("生命流", result["enabled"], filename)
+            self.assertTrue(result.get("rune_used"), filename)
 
     def test_wrong_run_count_is_failed(self) -> None:
         icons = np.zeros((200, 600, 3), dtype=np.uint8)

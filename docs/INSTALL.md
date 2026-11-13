@@ -7,7 +7,7 @@
 - Windows 10 / 11。
 - Python 3.10 或更高版本，需带 Tkinter（Windows 官方安装包默认包含）。
 - 第三方依赖只有 `numpy` 和 `Pillow`。
-- 不需要 OpenCV、OCR 模型、Electron、WebView2 或浏览器自动化。
+- 自动识英雄名使用本地 RapidOCR + ONNX Runtime；首次安装会拉取约几十 MB 的模型/依赖，之后完全离线，不需要 Electron/WebView2/浏览器自动化。
 
 启动器会优先使用带 `numpy / Pillow / tkinter` 的 DSH 运行时；没有时再找系统 Python。
 

@@ -12,6 +12,7 @@ import numpy as np
 
 from .blobs import group_nameplates, segment_glyphs, segment_runs
 from .chroma import chroma
+from .runes import rune_feature
 
 
 def recognize_rois(
@@ -21,6 +22,7 @@ def recognize_rois(
     layout: Dict[str, Any],
     school_matcher: Any,
     glyph_matcher: Any,
+    ocr_matcher: Any = None,
 ) -> Dict[str, Any]:
     """Recognize one median-stacked frame from its two ROI crops."""
     started = time.perf_counter()
@@ -53,25 +55,31 @@ def recognize_rois(
         }
     else:
         vectors = [chroma(icons, int(r["cx"]), cy, half) for r in runs]
-        schools = school_matcher.match(vectors)
+        rune_half = max(8, int(float(np.median([r["w"] for r in runs])) * 0.55))
+        rune_vectors = [rune_feature(icons, int(r["cx"]), cy, rune_half) for r in runs]
+        schools = school_matcher.match(vectors, rune_vectors)
         schools["run_count"] = len(runs)
     school_ms = (time.perf_counter() - started) * 1000.0
 
     started_hero = time.perf_counter()
-    boxes = segment_glyphs(
-        nameplates,
-        (0.0, 1.0, 0.0, 1.0),
-        bright_percentile=float(layout.get("glyphs", {}).get("bright_percentile", 72)),
-        min_area_scale=float(layout.get("glyphs", {}).get("min_area_scale", 80)),
-        min_height_px=max(8, int(client_h * 0.025)),
-    )
-    groups = group_nameplates(
-        boxes,
-        gap_threshold=client_w * 0.035,
-        client_height=client_h,
-        max_names=5,
-    )
-    heroes = glyph_matcher.match(nameplates, groups)
+    boxes: List[Any] = []
+    if ocr_matcher is not None:
+        heroes = ocr_matcher.match(nameplates, client_w, glyph_matcher)
+    else:
+        boxes = segment_glyphs(
+            nameplates,
+            (0.0, 1.0, 0.0, 1.0),
+            bright_percentile=float(layout.get("glyphs", {}).get("bright_percentile", 72)),
+            min_area_scale=float(layout.get("glyphs", {}).get("min_area_scale", 80)),
+            min_height_px=max(8, int(client_h * 0.025)),
+        )
+        groups = group_nameplates(
+            boxes,
+            gap_threshold=client_w * 0.035,
+            client_height=client_h,
+            max_names=5,
+        )
+        heroes = glyph_matcher.match(nameplates, groups)
     hero_ms = (time.perf_counter() - started_hero) * 1000.0
 
     warnings: List[str] = []

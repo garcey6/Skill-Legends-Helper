@@ -6,8 +6,19 @@
 
 | 夹具 | 客户区 | 实现 | P50 | P95 | 最大 | 流派 | 英雄 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `samples/draft_001.png` | 1800×1118 | 色度 + 字模 | 52.3ms | 69.6ms | 88.8ms | 6.7ms | 41.6ms |
-| `samples/window_draft.png` | 2153×1179 | 色度 + 字模 | 61.9ms | 95.2ms | 111.9ms | 7.8ms | 46.9ms |
+| `samples/draft_001.png` | 1800×1118 | 色度 + 字模（旧） | 52.3ms | 69.6ms | 88.8ms | 6.7ms | 41.6ms |
+| `samples/window_draft.png` | 2153×1179 | 色度 + 字模（旧） | 61.9ms | 95.2ms | 111.9ms | 7.8ms | 46.9ms |
+
+OCR + 符文版（单次，不含首次 RapidOCR 初始化约 1s）：
+
+| 夹具 | 总耗时 | 英雄来源 |
+| --- | --- | --- |
+| `samples/draft_001.png` | 约 1.28s（含初始化） | OCR 3/3 |
+| `samples/window_draft.png` | 约 0.15s | OCR 3/3 |
+| `validation/case01_client.png` | 约 0.11s | OCR 3/3 |
+| `validation/case02_client.png` | 约 0.14s | OCR 3/3 |
+
+首次 OCR 初始化在 `agent.start_auto()` 里预热，不进入每局链路。上面的数字是单次实测，不是 200 局 P50/P95；真实对局仍需补测。
 
 说明：
 

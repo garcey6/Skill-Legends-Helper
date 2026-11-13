@@ -26,25 +26,33 @@ from app.live.replaysrc import ImageFrameSource, ReplayFrameSource  # noqa: E402
 from app.live.stability import is_still, median_stack  # noqa: E402
 from app.live.win32src import WindowFrameSource  # noqa: E402
 from app.vision.glyphs import GlyphMatcher  # noqa: E402
+from app.vision.ocr import RapidOcrNameMatcher  # noqa: E402
 from app.vision.pipeline import build_result, recognize_rois  # noqa: E402
 from app.vision.schools import SchoolMatcher  # noqa: E402
 
 LAYOUT_PATH = ROOT / "data" / "recognize" / "layout.json"
 SCHOOLS_PATH = ROOT / "data" / "recognize" / "schools_chroma.json"
 GLYPHS_PATH = ROOT / "data" / "recognize" / "glyphs.json"
+RUNES_PATH = ROOT / "data" / "recognize" / "school_runes.json"
 
 
-def load_assets() -> Dict[str, Any]:
+def load_assets(use_ocr: bool = True) -> Dict[str, Any]:
     layout = json.loads(LAYOUT_PATH.read_text(encoding="utf-8"))
     schools = json.loads(SCHOOLS_PATH.read_text(encoding="utf-8"))
     glyphs = json.loads(GLYPHS_PATH.read_text(encoding="utf-8"))
+    runes = json.loads(RUNES_PATH.read_text(encoding="utf-8")) if RUNES_PATH.exists() else None
     advisor = Advisor()
     names = [h["name"] for h in advisor.heroes]
     return {
         "layout": layout,
         "advisor": advisor,
-        "school_matcher": SchoolMatcher(schools, float(layout.get("margin_min", 0.012))),
+        "school_matcher": SchoolMatcher(
+            schools,
+            float(layout.get("margin_min", 0.012)),
+            runes=runes,
+        ),
         "glyph_matcher": GlyphMatcher(glyphs, names),
+        "ocr_matcher": RapidOcrNameMatcher(names) if use_ocr else None,
         "school_by_name": {s["name"]: s["id"] for s in advisor.schools},
     }
 
@@ -143,6 +151,7 @@ def run_replay(path: str, assets: Dict[str, Any], frames: int = 5) -> Dict[str, 
         assets["layout"],
         assets["school_matcher"],
         assets["glyph_matcher"],
+        assets.get("ocr_matcher"),
     )
     result = build_result(rec, assets["advisor"], assets["school_by_name"])
     return clean_result(result, "replay", seq.get("frame_id", 0), state, seq["stability"], {"ok": True, "replay": path})
@@ -159,6 +168,7 @@ def run_image(path: str, assets: Dict[str, Any]) -> Dict[str, Any]:
         assets["layout"],
         assets["school_matcher"],
         assets["glyph_matcher"],
+        assets.get("ocr_matcher"),
     )
     result = build_result(rec, assets["advisor"], assets["school_by_name"])
     return clean_result(
@@ -186,6 +196,7 @@ def run_live(assets: Dict[str, Any], frames: int = 5) -> Dict[str, Any]:
         assets["layout"],
         assets["school_matcher"],
         assets["glyph_matcher"],
+        assets.get("ocr_matcher"),
     )
     result = build_result(rec, assets["advisor"], assets["school_by_name"])
     return clean_result(result, "window", seq.get("frame_id", 0), state, seq["stability"], {"ok": True})

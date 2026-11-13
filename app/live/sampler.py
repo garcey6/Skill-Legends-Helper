@@ -26,6 +26,7 @@ class LiveSampler:
         glyph_matcher: Any,
         callback: Callable[[str, Optional[Dict[str, Any]]], None],
         *,
+        ocr_matcher: Any = None,
         interval_ms: int = 250,
         before_capture: Optional[Callable[[], None]] = None,
         after_capture: Optional[Callable[[], None]] = None,
@@ -34,6 +35,7 @@ class LiveSampler:
         self.layout = layout
         self.school_matcher = school_matcher
         self.glyph_matcher = glyph_matcher
+        self.ocr_matcher = ocr_matcher
         self.callback = callback
         self.before_capture = before_capture
         self.after_capture = after_capture
@@ -228,6 +230,7 @@ class LiveSampler:
                     self.layout,
                     self.school_matcher,
                     self.glyph_matcher,
+                    self.ocr_matcher,
                 )
             except Exception:
                 self._emit("DEGRADED")

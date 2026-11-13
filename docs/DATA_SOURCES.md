@@ -25,10 +25,14 @@
 
 ## 识别模板
 
-- `data/recognize/schools_chroma.json`：13 流派归一化色度，来源是 `data/templates/schools/*.png` 面板图标和内置示例帧底部书包的干净变体。
-- `data/recognize/glyphs.json`：60 个英雄名用到的 155 个汉字，16×16 灰度字模；由 Windows 自带的 SimHei / SimSun / Microsoft YaHei / Deng / STXiHei 渲染，加上两段示例帧真实切出的字模。
+- `data/recognize/schools_chroma.json`：13 流派归一化色度。基础模板来自 `data/templates/schools/*.png` 的 13 个面板图标；每类 1~3 个变体，变体来自 `samples/draft_001.png` 和 `samples/window_draft.png` 的底部书包。`life` / `vulnerable` 目前只有基础模板，没有干净底部变体。
+- `data/recognize/glyphs.json`：60 个英雄名用到的 **155 个不同汉字**，共 **951** 个 16×16 字模向量：
+  - 930 个来自 Windows 自带 6 个字体的渲染：SimHei、SimSun、Microsoft YaHei、Microsoft YaHei Bold、DengXian Bold、STXiHei；64px 渲染、裁 bbox、缩放 16×16、减均值除标准差。
+  - 21 个（20 个不同字）来自两段示例帧真实切字：`samples/draft_001.png`（森林游侠/神秘法师/魔镜）和 `samples/window_draft.png`（守财奴/狂暴战将/精灵牧师）。
+  - **没有游戏原字体**；`coverage=1.0` 只表示 155 字都有字体模板，不等于游戏字体完全一致。
 - `data/recognize/layout.json`：两个 ROI、期望启用数、margin、稳定门和字模阈值。
 - `samples/frames/draft_001` / `draft_002`：离线回放夹具，用于无游戏回归。
+- `samples/validation/`：2026-11-13 新增的两张真实窗口验证帧，**只验证，不参与模板生成**；当前结果见该目录 README。
 
 ## 攻略知识库
 

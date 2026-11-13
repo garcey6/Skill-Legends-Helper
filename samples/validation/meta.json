@@ -1,0 +1,27 @@
+{
+  "description": "用户提供的两种窗口化/非标准客户区验证帧。没有右侧 13 流派面板，因此只标注 3 个英雄名；流派没有独立标注，当前输出仅用于回归对比。",
+  "cases": [
+    {
+      "name": "case01",
+      "full": "../window_case_01.png",
+      "client": "case01_client.png",
+      "client_rect_approx": [159, 191, 2290, 1375],
+      "expected": {
+        "heroes": ["矮人领主", "皇家骑士", "熊猫武士"],
+        "schools": null
+      },
+      "note": "带标题栏的窗口，画面整体偏暗；第二个名牌的皇/家被 4 连通切成薄片。"
+    },
+    {
+      "name": "case02",
+      "full": "../window_case_02.png",
+      "client": "case02_client.png",
+      "client_rect_approx": [0, 32, 2560, 1515],
+      "expected": {
+        "heroes": ["狂暴战将", "霜影暴君", "神秘法师"],
+        "schools": null
+      },
+      "note": "接近最大化的窗口；第二个名牌的霜/影亮度只有约 159，低于固定 180 阈值；浮窗在右侧盖住第 4/5 个名牌，不影响前 3 个。"
+    }
+  ]
+}

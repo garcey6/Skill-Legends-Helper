@@ -139,8 +139,11 @@ class LiveSampler:
                 self._last_icons is not None
                 and self._last_names is not None
                 and not self._force.is_set()
+                # Do not compare nameplate pixels here: the overlay may cover
+                # part of the nameplate ROI while the probe runs, but the last
+                # accepted frame was captured with the overlay hidden.  Comparing
+                # the two made a stable draft capture forever (and flicker).
                 and diff_ratio(icons_frame.image, self._last_icons) < 0.008
-                and diff_ratio(name_probe.image, self._last_names) < 0.008
             ):
                 self._state = "READY"
                 self._emit("READY")
@@ -172,6 +175,14 @@ class LiveSampler:
                         self.after_capture()
                     except Exception:
                         pass
+            if icon_frames and name_frames:
+                # A window resize during the 5-frame burst changes the ROI
+                # height; drop the minority shapes instead of passing a ragged
+                # stack to numpy.
+                icon_shape = icon_frames[0].shape
+                name_shape = name_frames[0].shape
+                icon_frames = [frame for frame in icon_frames if frame.shape == icon_shape]
+                name_frames = [frame for frame in name_frames if frame.shape == name_shape]
             if len(icon_frames) < 3 or len(name_frames) < 3:
                 self._emit("DEGRADED")
                 self._stop.wait(0.7)
@@ -253,7 +264,12 @@ class LiveSampler:
                 self._last_names = name_stack.copy()
                 self._force.clear()
                 self._state = "READY"
-                self._emit("READY", result, force=changed)
+                if changed:
+                    self._emit("READY", result, force=True)
+                else:
+                    # Update only the state machine; do not re-push a result
+                    # whose fingerprint is unchanged.
+                    self._emit("READY")
             else:
                 self._state = "DEGRADED"
                 self._emit("DEGRADED", result)

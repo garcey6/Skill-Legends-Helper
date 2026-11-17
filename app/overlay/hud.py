@@ -169,6 +169,16 @@ def _rounded_image(image: Image.Image, radius: int) -> Image.Image:
     return output
 
 
+def viewport_crop(image: Image.Image, offset: int, max_height: int) -> Tuple[Image.Image, int]:
+    """Crop one viewport from a tall card and clamp the scroll offset."""
+    height = max(1, min(int(max_height), image.height))
+    max_offset = max(0, image.height - height)
+    offset = max(0, min(int(offset), max_offset))
+    if height >= image.height:
+        return image.copy(), 0
+    return image.crop((0, offset, image.width, offset + height)), offset
+
+
 def _common_header(draw: ImageDraw.ImageDraw, title: str, right: str = "") -> None:
     draw.rectangle([0, 0, WIDTH, 3], fill=GOLD)
     draw.text((22, 16), title, font=_font(12, True), fill=GOLD_DIM)
@@ -402,10 +412,16 @@ class Hud:
         self.saved_position: Optional[Tuple[int, int]] = self._load_position()
         self._drag_offset: Tuple[int, int] = (0, 0)
         self._dragging = False
+        self._full_image: Optional[Image.Image] = None
+        self._scroll_offset = 0
+        self._viewport_height = 0
+        self._game_hwnd: Optional[int] = None
         for widget in (self.root, self.canvas):
             widget.bind("<ButtonPress-1>", self._drag_start)
             widget.bind("<B1-Motion>", self._drag_move)
             widget.bind("<ButtonRelease-1>", self._drag_end)
+        for widget in (self.root, self.canvas):
+            widget.bind("<MouseWheel>", self._on_mousewheel)
 
     # ------------------------------------------------------------- position
     def _load_position(self) -> Optional[Tuple[int, int]]:
@@ -468,25 +484,56 @@ class Hud:
         self.last_position = (x, y)
         return x, y
 
+    def _on_mousewheel(self, event) -> str:
+        if self._full_image is None or self._full_image.height <= self._viewport_height:
+            return "break"
+        step = -60 if event.delta > 0 else 60
+        max_offset = max(0, self._full_image.height - self._viewport_height)
+        self._scroll_offset = max(0, min(max_offset, self._scroll_offset + step))
+        self._render_viewport()
+        return "break"
+
+    def _render_viewport(self) -> None:
+        if self._full_image is None:
+            return
+        view, offset = viewport_crop(self._full_image, self._scroll_offset, self._viewport_height)
+        self._scroll_offset = offset
+        if view.height < self._full_image.height:
+            hint = view.copy()
+            draw = ImageDraw.Draw(hint)
+            draw.rounded_rectangle(
+                [WIDTH - 112, view.height - 24, WIDTH - 10, view.height - 6],
+                radius=6,
+                fill=(14, 20, 28),
+                outline=BORDER,
+                width=1,
+            )
+            draw.text((WIDTH - 61, view.height - 15), "滚轮查看全部", font=_font(8.5), fill=DIM, anchor="mm")
+            view = hint
+        self.last_image = view
+        self.photo = ImageTk.PhotoImage(view)
+        self.canvas.config(width=view.width, height=view.height)
+        self.canvas.itemconfigure(self.image_item, image=self.photo)
+        x, y = self._place(view, self._game_hwnd)
+        self.root.deiconify()
+        self.root.update_idletasks()
+        capture.apply_overlay_styles(self.hwnd)
+        capture.position_topmost(self.hwnd, x, y, view.width, view.height)
+        self.visible = True
+
     def show(self, image: Image.Image, game_hwnd: Optional[int] = None) -> None:
         self.last_source = image
+        self._game_hwnd = game_hwnd
         if self.scale and abs(self.scale - 1.0) > 0.01:
             image = image.resize(
                 (max(1, int(round(image.width * self.scale))), max(1, int(round(image.height * self.scale)))),
                 Image.LANCZOS,
             )
-        self.last_image = image
-        self.photo = ImageTk.PhotoImage(image)
-        self.canvas.config(width=image.width, height=image.height)
-        self.canvas.itemconfigure(self.image_item, image=self.photo)
-        x, y = self._place(image, game_hwnd)
-        self.root.deiconify()
-        self.root.update_idletasks()
-        # Tk may recreate the window's extended style when it maps; re-apply
-        # no-activate/no-taskbar/topmost before showing it again.
-        capture.apply_overlay_styles(self.hwnd)
-        capture.position_topmost(self.hwnd, x, y, image.width, image.height)
-        self.visible = True
+        self._full_image = image
+        left, top, right, bottom = capture.monitor_work_area(game_hwnd)
+        self._viewport_height = min(image.height, max(300, bottom - top - 40))
+        self._scroll_offset = 0
+        self._render_viewport()
 
     def hide(self) -> None:
         self.root.withdraw()

@@ -16,7 +16,7 @@ import threading
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
@@ -121,6 +121,11 @@ def choose_hotkeys(args) -> Dict[str, str]:
         else:
             chosen[action] = preferred[action]
     return chosen
+
+
+def hero_warning(candidates: List[Dict[str, Any]]) -> str:
+    missing = sum(1 for candidate in candidates if not candidate.get("name"))
+    return "有 %d 个英雄未识别" % missing if missing else ""
 
 
 class Agent:
@@ -329,7 +334,7 @@ class Agent:
             return
         candidates = (result.get("heroes") or {}).get("candidates") or []
         hero_names = [str(c.get("name")) for c in candidates if c.get("name")]
-        if len(hero_names) < 2:
+        if not hero_names:
             return
         if not self.hud.visible:
             return
@@ -337,7 +342,7 @@ class Agent:
         banned = [self.live_school_by_name[n] for n in (schools.get("banned") or []) if n in self.live_school_by_name]
         if len(enabled) != 8 or len(banned) != 5:
             return
-        warning = "有英雄未识别" if len(hero_names) < 3 else ""
+        warning = hero_warning(candidates)
         rec = self.advisor.recommend(hero_names, enabled, banned)
         image = render_result(rec, None, warning, self.capture_key, self.toggle_key, self.quit_key)
         hwnd = self.live_source.hwnd if self.live_source is not None else self.last_game_hwnd

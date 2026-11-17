@@ -33,7 +33,7 @@ python tools/record_frames.py --out samples/frames/draft_004 --frames 30
 python -m unittest discover -s tests -t . -v
 ```
 
-当前共 **43 项**，覆盖：
+当前共 **57 项**，覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；

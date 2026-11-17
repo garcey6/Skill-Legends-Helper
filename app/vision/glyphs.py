@@ -135,7 +135,12 @@ class GlyphMatcher:
         score, name, top = best[0]
         return {"name": name, "score": round(float(score), 4), "top": top}
 
-    def match(self, arr: np.ndarray, groups: List[List[Box]]) -> Dict[str, Any]:
+    def match(
+        self,
+        arr: np.ndarray,
+        groups: List[List[Box]],
+        trim_trailing: bool = True,
+    ) -> Dict[str, Any]:
         candidates = []
         missing: List[str] = []
         for index, group in enumerate(groups[:5]):
@@ -149,11 +154,12 @@ class GlyphMatcher:
                     "unknown_hero": bool(name and name not in self.names),
                 }
             )
-        # The last two unlabelled/unknown slots are 特权解锁/随机 in the glyph-
-        # only fallback.  Trim only trailing unknowns; a missing hero in the
-        # middle keeps its slot and stays visible to the caller.
-        while candidates and not candidates[-1].get("name"):
-            candidates.pop()
+        # The OCR-less legacy path cannot read 特权解锁/随机; trailing unknowns
+        # there are usually those two special slots.  The OCR path already
+        # knows the hero boundary and passes trim_trailing=False.
+        if trim_trailing:
+            while candidates and not candidates[-1].get("name"):
+                candidates.pop()
         return {
             "candidates": candidates,
             "glyph_coverage": self.coverage,

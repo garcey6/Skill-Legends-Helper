@@ -217,7 +217,11 @@ class RapidOcrNameMatcher:
                     }
                 )
         elif any(not c.get("name") for c in candidates):
-            glyph = glyph_matcher.match(nameplates, self._glyph_groups(nameplates, client_w))
+            glyph = glyph_matcher.match(
+                nameplates,
+                self._glyph_groups(nameplates, client_w),
+                trim_trailing=False,
+            )
             for index, fallback in enumerate(glyph.get("candidates", [])):
                 if index >= len(candidates):
                     break

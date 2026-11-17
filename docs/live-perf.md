@@ -40,4 +40,4 @@ samples/frames/draft_002/   窗口化截图（2153×1179）
 python -m tools.live_recognize --replay samples/frames/draft_002 --pretty
 ```
 
-两条都应输出 `schools.status=ok`、8 启用 / 5 禁用和 3 个英雄名。
+两条都应输出 `schools.status=ok`、8 启用 / 5 禁用和实际英雄名（当前夹具为 3 个）。

@@ -35,7 +35,7 @@ cls
 echo.
 echo  选技大乱斗 - 浮窗助手
 echo.
-echo  1. 启动浮窗 + 网页（默认）
+echo  1. 启动浮窗 + 网页
 echo  2. 只启动网页
 echo  3. 打开设置
 echo  4. 退出

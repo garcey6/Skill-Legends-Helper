@@ -20,7 +20,7 @@ from . import capture
 
 WIDTH = 620
 HEIGHT = 560
-HEADER_H = 150
+HEADER_H = 44
 SECTION_H = 190
 SCHOOLS_H = 150
 FOOTER_H = 30
@@ -279,7 +279,10 @@ def _render_hero_section(
     role = str(card.get("role", ""))
     schools = (card.get("build") or {}).get("schools") or []
     route = " + ".join(schools[:2])
-    meta_line = role + (" · 路线 " + route if route else "")
+    conf = {"high": "高置信", "medium": "中等", "low": "低", "backup": "备选"}.get(
+        str(card.get("confidence", "")), ""
+    )
+    meta_line = role + (" · 路线 " + route if route else "") + (" · " + conf if conf else "")
     draw.text((86, y + 34), meta_line, font=_font(11), fill=MUTED)
     if not card.get("has_guide"):
         draw.text((86, y + 50), "暂无完整攻略，结论仅供参考", font=_font(9), fill=(206, 160, 98))
@@ -416,6 +419,7 @@ class Hud:
         self._scroll_offset = 0
         self._viewport_height = 0
         self._game_hwnd: Optional[int] = None
+        self._anchor_tall_pending = False
         for widget in (self.root, self.canvas):
             widget.bind("<ButtonPress-1>", self._drag_start)
             widget.bind("<B1-Motion>", self._drag_move)
@@ -468,7 +472,12 @@ class Hud:
         self._dragging = False
         self._save_position()
 
-    def _place(self, image: Image.Image, game_hwnd: Optional[int] = None) -> Tuple[int, int]:
+    def _place(
+        self,
+        image: Image.Image,
+        game_hwnd: Optional[int] = None,
+        anchor_tall: bool = False,
+    ) -> Tuple[int, int]:
         left, top, right, bottom = capture.monitor_work_area(game_hwnd)
         work_h = bottom - top
         if self.saved_position:
@@ -482,7 +491,7 @@ class Hud:
         # A tall multi-hero card must not cover the bottom icon strip while the
         # sampler is probing.  Start it at the top; the viewport is already
         # capped below the icons.
-        if image.height > work_h * 0.6:
+        if anchor_tall and image.height > work_h * 0.6:
             y = top + 20
         self.saved_position = (x, y)
         self.root.geometry("%dx%d+%d+%d" % (image.width, image.height, x, y))
@@ -519,7 +528,12 @@ class Hud:
         self.photo = ImageTk.PhotoImage(view)
         self.canvas.config(width=view.width, height=view.height)
         self.canvas.itemconfigure(self.image_item, image=self.photo)
-        x, y = self._place(view, self._game_hwnd)
+        x, y = self._place(
+            view,
+            self._game_hwnd,
+            anchor_tall=self._anchor_tall_pending,
+        )
+        self._anchor_tall_pending = False
         self.root.deiconify()
         self.root.update_idletasks()
         capture.apply_overlay_styles(self.hwnd)
@@ -529,6 +543,7 @@ class Hud:
     def show(self, image: Image.Image, game_hwnd: Optional[int] = None) -> None:
         self.last_source = image
         self._game_hwnd = game_hwnd
+        self._anchor_tall_pending = True
         if self.scale and abs(self.scale - 1.0) > 0.01:
             image = image.resize(
                 (max(1, int(round(image.width * self.scale))), max(1, int(round(image.height * self.scale)))),
@@ -536,7 +551,9 @@ class Hud:
             )
         self._full_image = image
         left, top, right, bottom = capture.monitor_work_area(game_hwnd)
-        self._viewport_height = min(image.height, max(300, bottom - top - 260))
+        # Keep the scroll viewport clear of the bottom icon strip: 180px is a
+        # conservative reserve on the supported 1600p/1080p clients.
+        self._viewport_height = min(image.height, max(300, bottom - top - 180))
         self._scroll_offset = 0
         self._render_viewport()
 

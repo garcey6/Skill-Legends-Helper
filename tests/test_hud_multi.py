@@ -39,7 +39,7 @@ class HudMultiHeroTest(unittest.TestCase):
         five = _render(5)
         self.assertGreater(three.height, one.height)
         self.assertGreater(five.height, three.height)
-        self.assertGreater(five.height, 1200)
+        self.assertGreater(five.height, 1100)
 
     def test_five_heroes_do_not_raise(self) -> None:
         image = _render(5)

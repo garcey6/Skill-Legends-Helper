@@ -16,7 +16,7 @@ NAMES = ["森林游侠", "神秘法师", "魔镜", "守财奴", "狂暴战将", 
 
 
 class FakeGlyph:
-    def match(self, arr, groups):
+    def match(self, arr, groups, trim_trailing=True):
         return {"candidates": [], "glyph_coverage": 1.0, "missing_glyphs": []}
 
 
@@ -46,6 +46,19 @@ def names_for(texts):
 
 
 class DynamicHeroTest(unittest.TestCase):
+    def test_five_stone_plates_are_detected(self) -> None:
+        from PIL import Image
+
+        from app.vision.ocr import RapidOcrNameMatcher
+
+        arr = np.asarray(Image.open(ROOT / "samples" / "draft_001.png").convert("RGB"), dtype=np.uint8)
+        h, w = arr.shape[:2]
+        layout = json.loads((ROOT / "data" / "recognize" / "layout.json").read_text(encoding="utf-8"))
+        x0, x1, y0, y1 = layout["rois"]["nameplates"]
+        crop = arr[int(h * y0):int(h * y1), int(w * x0):int(w * x1)]
+        plates = RapidOcrNameMatcher(NAMES).detect_plates(crop, w)
+        self.assertEqual(len(plates), 5)
+
     def test_three_heroes_stop_at_special(self) -> None:
         self.assertEqual(
             names_for(
@@ -96,6 +109,25 @@ class DynamicHeroTest(unittest.TestCase):
         groups = [[(0, 0, 5, 5, 10)] for _ in range(4)]
         result = matcher.match(np.zeros((80, 400, 3), np.uint8), groups)
         self.assertEqual(len(result["candidates"]), 4)
+
+    def test_glyph_keeps_trailing_unknown_when_ocr_boundary_known(self) -> None:
+        matcher = GlyphMatcher(GLYPHS, NAMES)
+        calls = {"count": 0}
+
+        def fake_match_nameplate(_arr, _boxes):
+            calls["count"] += 1
+            name = "森林游侠" if calls["count"] < 4 else None
+            return {"name": name, "score": 1.0 if name else 0.0, "top": []}
+
+        matcher.match_nameplate = fake_match_nameplate  # type: ignore[method-assign]
+        groups = [[(0, 0, 5, 5, 10)] for _ in range(4)]
+        result = matcher.match(
+            np.zeros((80, 400, 3), np.uint8),
+            groups,
+            trim_trailing=False,
+        )
+        self.assertEqual(len(result["candidates"]), 4)
+        self.assertIsNone(result["candidates"][3]["name"])
 
 
 if __name__ == "__main__":

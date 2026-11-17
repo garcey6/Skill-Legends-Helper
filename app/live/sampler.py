@@ -17,6 +17,14 @@ from ..vision.pipeline import recognize_rois
 CaptureItem = Tuple[SourceState, np.ndarray, np.ndarray, Dict[str, Any], float]
 
 
+def consistent_frames(frames: list[np.ndarray]) -> list[np.ndarray]:
+    """Drop frames from a different ROI shape after a window resize."""
+    if not frames:
+        return []
+    shape = frames[0].shape
+    return [frame for frame in frames if frame.shape == shape]
+
+
 class LiveSampler:
     def __init__(
         self,
@@ -158,6 +166,11 @@ class LiveSampler:
                     self.before_capture()
                 except Exception:
                     pass
+            # name_probe was captured before the overlay was hidden.  Replace
+            # it so all five frames in the aggregate see the same clean ROI.
+            hidden_name = self.source.grab(names_roi)
+            if hidden_name is not None:
+                name_frames[0] = hidden_name.image
             try:
                 for _ in range(n - 1):
                     if self._stop.is_set():
@@ -179,10 +192,8 @@ class LiveSampler:
                 # A window resize during the 5-frame burst changes the ROI
                 # height; drop the minority shapes instead of passing a ragged
                 # stack to numpy.
-                icon_shape = icon_frames[0].shape
-                name_shape = name_frames[0].shape
-                icon_frames = [frame for frame in icon_frames if frame.shape == icon_shape]
-                name_frames = [frame for frame in name_frames if frame.shape == name_shape]
+                icon_frames = consistent_frames(icon_frames)
+                name_frames = consistent_frames(name_frames)
             if len(icon_frames) < 3 or len(name_frames) < 3:
                 self._emit("DEGRADED")
                 self._stop.wait(0.7)

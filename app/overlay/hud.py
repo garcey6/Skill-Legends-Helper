@@ -470,15 +470,20 @@ class Hud:
 
     def _place(self, image: Image.Image, game_hwnd: Optional[int] = None) -> Tuple[int, int]:
         left, top, right, bottom = capture.monitor_work_area(game_hwnd)
+        work_h = bottom - top
         if self.saved_position:
             x = max(left, min(int(self.saved_position[0]), right - image.width))
             y = max(top, min(int(self.saved_position[1]), bottom - image.height))
         else:
-            work_h = bottom - top
             x = right - image.width - 20
             y = top + max(20, (work_h - image.height) // 2 - 20)
             if y + image.height > bottom - 20:
                 y = max(top + 20, bottom - image.height - 20)
+        # A tall multi-hero card must not cover the bottom icon strip while the
+        # sampler is probing.  Start it at the top; the viewport is already
+        # capped below the icons.
+        if image.height > work_h * 0.6:
+            y = top + 20
         self.saved_position = (x, y)
         self.root.geometry("%dx%d+%d+%d" % (image.width, image.height, x, y))
         self.last_position = (x, y)
@@ -531,7 +536,7 @@ class Hud:
             )
         self._full_image = image
         left, top, right, bottom = capture.monitor_work_area(game_hwnd)
-        self._viewport_height = min(image.height, max(300, bottom - top - 40))
+        self._viewport_height = min(image.height, max(300, bottom - top - 260))
         self._scroll_offset = 0
         self._render_viewport()
 

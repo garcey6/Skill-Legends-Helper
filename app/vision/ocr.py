@@ -19,9 +19,18 @@ except Exception:  # pragma: no cover
     cv2 = None
 
 
+MAX_HEROES = 5
+
+
 def _normalize_text(text: str) -> str:
     text = re.sub(r"[\s·•.,，。:：;；'\"“”‘’!！?？\-_/\\|]+", "", text or "")
     return text.strip()
+
+
+def _is_special_plate(text: str) -> bool:
+    """The top row ends with privilege/random slots; they are not heroes."""
+    text = _normalize_text(text)
+    return any(token in text for token in ("特权", "解锁", "随机"))
 
 
 def _levenshtein(a: str, b: str) -> int:
@@ -109,7 +118,7 @@ class RapidOcrNameMatcher:
             if clusters:
                 boxes = max(clusters, key=lambda c: (len(c), sum(b[2] - b[0] for b in c)))
         boxes.sort(key=lambda b: b[0])
-        return boxes[:3]
+        return boxes[:MAX_HEROES]
 
     # ------------------------------------------------------------------- OCR
     def _ocr_crop(self, crop: np.ndarray) -> Tuple[str, float]:
@@ -168,18 +177,21 @@ class RapidOcrNameMatcher:
 
     def match(self, nameplates: np.ndarray, client_w: int, glyph_matcher: Any) -> Dict[str, Any]:
         plates = self.detect_plates(nameplates, client_w)
-        candidates: List[Optional[Dict[str, Any]]] = [None, None, None]
-        if plates:
-            for index, (x0, y0, x1, y1) in enumerate(plates[:3]):
-                pad_x = max(2, (x1 - x0) // 20)
-                pad_y = max(2, (y1 - y0) // 20)
-                crop = nameplates[
-                    max(0, y0 - pad_y):min(nameplates.shape[0], y1 + pad_y),
-                    max(0, x0 - pad_x):min(nameplates.shape[1], x1 + pad_x),
-                ]
-                text, confidence = self._ocr_crop(crop)
-                name = self._resolve(text, confidence)
-                candidates[index] = {
+        candidates: List[Optional[Dict[str, Any]]] = []
+        for x0, y0, x1, y1 in plates[:MAX_HEROES]:
+            pad_x = max(2, (x1 - x0) // 20)
+            pad_y = max(2, (y1 - y0) // 20)
+            crop = nameplates[
+                max(0, y0 - pad_y):min(nameplates.shape[0], y1 + pad_y),
+                max(0, x0 - pad_x):min(nameplates.shape[1], x1 + pad_x),
+            ]
+            text, confidence = self._ocr_crop(crop)
+            if _is_special_plate(text):
+                break
+            index = len(candidates)
+            name = self._resolve(text, confidence)
+            candidates.append(
+                {
                     "slot": index,
                     "name": name,
                     "score": round(float(confidence if name else 0.0), 4),
@@ -187,11 +199,15 @@ class RapidOcrNameMatcher:
                     "source": "ocr" if name else None,
                     "ocr_text": text,
                 }
-        if any(c is None or not c.get("name") for c in candidates):
+            )
+        # If no plate was detected at all, fall back to the glyph groups.  When
+        # plates were detected, their count is the hero boundary; glyph results
+        # may only fill missing OCR slots, never append past a special plate.
+        if not plates:
             glyph = glyph_matcher.match(nameplates, self._glyph_groups(nameplates, client_w))
-            for index, fallback in enumerate(glyph.get("candidates", [])[:3]):
-                if candidates[index] is None or not candidates[index].get("name"):
-                    candidates[index] = {
+            for index, fallback in enumerate(glyph.get("candidates", [])[:MAX_HEROES]):
+                candidates.append(
+                    {
                         "slot": index,
                         "name": fallback.get("name"),
                         "score": round(float(fallback.get("score", 0.0)), 4),
@@ -199,18 +215,24 @@ class RapidOcrNameMatcher:
                         "source": "glyph" if fallback.get("name") else None,
                         "ocr_text": "",
                     }
-        for index in range(3):
-            if candidates[index] is None:
+                )
+        elif any(not c.get("name") for c in candidates):
+            glyph = glyph_matcher.match(nameplates, self._glyph_groups(nameplates, client_w))
+            for index, fallback in enumerate(glyph.get("candidates", [])):
+                if index >= len(candidates):
+                    break
+                if candidates[index].get("name"):
+                    continue
                 candidates[index] = {
                     "slot": index,
-                    "name": None,
-                    "score": 0.0,
-                    "unknown_hero": False,
-                    "source": None,
-                    "ocr_text": "",
+                    "name": fallback.get("name"),
+                    "score": round(float(fallback.get("score", 0.0)), 4),
+                    "unknown_hero": bool(fallback.get("unknown_hero")),
+                    "source": "glyph" if fallback.get("name") else None,
+                    "ocr_text": candidates[index].get("ocr_text", ""),
                 }
         return {
-            "candidates": candidates[:3],
+            "candidates": candidates[:MAX_HEROES],
             "glyph_coverage": 1.0 if self.available else 0.0,
             "missing_glyphs": [],
             "engine": "rapidocr" if self.available else "glyph",

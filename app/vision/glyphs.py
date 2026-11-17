@@ -138,7 +138,7 @@ class GlyphMatcher:
     def match(self, arr: np.ndarray, groups: List[List[Box]]) -> Dict[str, Any]:
         candidates = []
         missing: List[str] = []
-        for index, group in enumerate(groups[:3]):
+        for index, group in enumerate(groups[:5]):
             result = self.match_nameplate(arr, group)
             name = result.get("name")
             candidates.append(
@@ -149,10 +149,11 @@ class GlyphMatcher:
                     "unknown_hero": bool(name and name not in self.names),
                 }
             )
-        while len(candidates) < 3:
-            candidates.append(
-                {"slot": len(candidates), "name": None, "score": 0.0, "unknown_hero": False}
-            )
+        # The last two unlabelled/unknown slots are 特权解锁/随机 in the glyph-
+        # only fallback.  Trim only trailing unknowns; a missing hero in the
+        # middle keeps its slot and stays visible to the caller.
+        while candidates and not candidates[-1].get("name"):
+            candidates.pop()
         return {
             "candidates": candidates,
             "glyph_coverage": self.coverage,

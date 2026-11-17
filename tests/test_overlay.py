@@ -26,7 +26,8 @@ class OverlayRenderTest(unittest.TestCase):
     def test_result_render(self):
         self.assertTrue(self.recommendation["recommendations"][0]["core_cards"])
         image = hud.render_result(self.recommendation)
-        self.assertEqual(image.size, (hud.WIDTH, hud.HEIGHT))
+        self.assertEqual(image.width, hud.WIDTH)
+        self.assertGreaterEqual(image.height, hud.HEIGHT)
         array = np.asarray(image.convert("RGB"))
         self.assertGreater(int(array.max()), 150)
         self.assertGreater(float(array.std()), 10.0)

@@ -166,12 +166,12 @@ class LiveSampler:
                     self.before_capture()
                 except Exception:
                     pass
-            # name_probe was captured before the overlay was hidden.  Replace
-            # it so all five frames in the aggregate see the same clean ROI.
-            hidden_name = self.source.grab(names_roi)
-            if hidden_name is not None:
-                name_frames[0] = hidden_name.image
             try:
+                # name_probe was captured before the overlay was hidden.
+                # Replace it so all five frames see the same clean ROI.
+                hidden_name = self.source.grab(names_roi)
+                if hidden_name is not None:
+                    name_frames[0] = hidden_name.image
                 for _ in range(n - 1):
                     if self._stop.is_set():
                         return

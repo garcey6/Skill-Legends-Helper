@@ -345,7 +345,7 @@ def render_result(
     draw = ImageDraw.Draw(image)
     _common_header(draw, "选技大乱斗 · 浮窗助手", "拖动 · %s 隐藏" % toggle_key)
     if warning:
-        draw.text((WIDTH - 22, 38), warning, font=_font(9), fill=(206, 160, 98), anchor="ra")
+        draw.text((WIDTH - 22, 30), warning, font=_font(9), fill=(206, 160, 98), anchor="ra")
 
     for index, card in enumerate(cards):
         _render_hero_section(draw, image, card, 44 + index * SECTION_H, index)

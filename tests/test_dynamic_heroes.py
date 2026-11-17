@@ -49,8 +49,10 @@ class DynamicHeroTest(unittest.TestCase):
     def test_five_stone_plates_are_detected(self) -> None:
         from PIL import Image
 
-        from app.vision.ocr import RapidOcrNameMatcher
+        from app.vision.ocr import RapidOcrNameMatcher, cv2
 
+        if cv2 is None:
+            self.skipTest("OpenCV unavailable")
         arr = np.asarray(Image.open(ROOT / "samples" / "draft_001.png").convert("RGB"), dtype=np.uint8)
         h, w = arr.shape[:2]
         layout = json.loads((ROOT / "data" / "recognize" / "layout.json").read_text(encoding="utf-8"))

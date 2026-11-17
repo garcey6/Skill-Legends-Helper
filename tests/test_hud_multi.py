@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import unittest
 
-from app.overlay.hud import render_result
+from app.overlay.hud import FOOTER_H, HEADER_H, SCHOOLS_H, render_result
 
 
 def _card(index: int):
@@ -40,6 +40,10 @@ class HudMultiHeroTest(unittest.TestCase):
         self.assertGreater(three.height, one.height)
         self.assertGreater(five.height, three.height)
         self.assertGreater(five.height, 1100)
+
+    def test_single_hero_uses_a_full_card_not_a_compact_row(self) -> None:
+        expected = HEADER_H + SCHOOLS_H + FOOTER_H + 300
+        self.assertGreaterEqual(_render(1).height, expected)
 
     def test_five_heroes_do_not_raise(self) -> None:
         image = _render(5)

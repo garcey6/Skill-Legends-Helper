@@ -20,8 +20,8 @@ from . import capture
 
 WIDTH = 620
 HEIGHT = 560
-HEADER_H = 44
-SECTION_H = 190
+HEADER_H = 56
+SECTION_H = 336
 SCHOOLS_H = 150
 FOOTER_H = 30
 POSITION_PATH = BASE_DIR / "data" / "overlay_position.json"
@@ -259,22 +259,35 @@ def _render_hero_section(
     y: int,
     index: int,
 ) -> None:
-    """One complete hero block; every hero gets the same level of detail."""
-    portrait = _portrait(card.get("art") or card.get("portrait", ""), (54, 66))
-    image.paste(_rounded_image(portrait, 10), (22, y + 6))
-    draw.rectangle([22, y + 6, 75, y + 71], outline=(54, 68, 86), width=1)
+    """One full single-hero card.  Stacking these preserves the old detail."""
+    accent = GOLD if index == 0 else (BLUE if index % 2 else TEAL)
+    top = y + 2
+    bottom = y + SECTION_H - 8
+    draw.rounded_rectangle([14, top, WIDTH - 14, bottom], radius=14, fill=PANEL, outline=BORDER, width=1)
+    draw.rounded_rectangle([14, top, 20, bottom], radius=5, fill=accent)
+
+    portrait = _portrait(card.get("art") or card.get("portrait", ""), (72, 88))
+    image.paste(_rounded_image(portrait, 10), (32, top + 16))
+    draw.rectangle([32, top + 16, 103, top + 103], outline=(54, 68, 86), width=1)
 
     name = str(card.get("name", ""))
-    draw.text((86, y + 2), name, font=_font(22, True), fill=TEXT)
-    name_width = draw.textlength(name, font=_font(22, True))
+    draw.text((116, top + 9), name, font=_font(28, True), fill=TEXT)
+    name_width = draw.textlength(name, font=_font(28, True))
     tier = str(card.get("tier", "?"))
-    tier_x = 86 + int(name_width) + 8
-    draw.rounded_rectangle([tier_x, y + 8, tier_x + 30, y + 26], radius=5, fill=(40, 34, 22), outline=(92, 74, 40), width=1)
-    draw.text((tier_x + 15, y + 17), tier, font=_font(10, True), fill=GOLD, anchor="mm")
+    tier_x = 116 + int(name_width) + 9
+    draw.rounded_rectangle(
+        [tier_x, top + 16, tier_x + 32, top + 34],
+        radius=5,
+        fill=(40, 34, 22),
+        outline=(92, 74, 40),
+        width=1,
+    )
+    draw.text((tier_x + 16, top + 25), tier, font=_font(10, True), fill=GOLD, anchor="mm")
+
     rank = "首选" if index == 0 else "第 %d" % (index + 1)
-    draw.text((WIDTH - 24, y + 4), rank, font=_font(10, True), fill=GOLD if index == 0 else DIM, anchor="ra")
-    draw.text((WIDTH - 24, y + 28), str(card.get("score", 0)), font=_font(30, True), fill=GOLD, anchor="ra")
-    draw.text((WIDTH - 24, y + 60), "分", font=_font(9), fill=DIM, anchor="ra")
+    draw.text((WIDTH - 28, top + 10), rank, font=_font(10, True), fill=GOLD if index == 0 else DIM, anchor="ra")
+    draw.text((WIDTH - 28, top + 26), str(card.get("score", 0)), font=_font(40, True), fill=GOLD, anchor="ra")
+    draw.text((WIDTH - 28, top + 72), "分", font=_font(10), fill=DIM, anchor="ra")
 
     role = str(card.get("role", ""))
     schools = (card.get("build") or {}).get("schools") or []
@@ -283,43 +296,50 @@ def _render_hero_section(
         str(card.get("confidence", "")), ""
     )
     meta_line = role + (" · 路线 " + route if route else "") + (" · " + conf if conf else "")
-    draw.text((86, y + 34), meta_line, font=_font(11), fill=MUTED)
+    draw.text((116, top + 48), meta_line, font=_font(12), fill=MUTED)
     if not card.get("has_guide"):
-        draw.text((86, y + 50), "暂无完整攻略，结论仅供参考", font=_font(9), fill=(206, 160, 98))
+        draw.text((116, top + 67), "暂无完整攻略，结论仅供参考", font=_font(9), fill=(206, 160, 98))
 
+    talent = _skill_icon(card.get("talent_icon", ""), (18, 18))
+    if talent is not None:
+        image.paste(talent, (116, top + 82), talent)
+    draw.text((138, top + 84), "天赋", font=_font(8.5), fill=DIM)
+    ultimate = _skill_icon(card.get("ultimate_icon", ""), (18, 18))
+    if ultimate is not None:
+        image.paste(ultimate, (176, top + 82), ultimate)
+    draw.text((198, top + 84), "大招", font=_font(8.5), fill=DIM)
+
+    draw.text((32, top + 116), "为什么", font=_font(10.5, True), fill=GOLD_DIM)
     reasons = card.get("reasons") or []
     reason_text = "  ".join(str(r).rstrip("。；") for r in reasons[:2])
-    lines = _wrap(draw, reason_text, _font(10), WIDTH - 108, 2)
+    lines = _wrap(draw, reason_text, _font(12), WIDTH - 64, 3)
     for line_index, line in enumerate(lines):
-        draw.text((86, y + 68 + line_index * 15), line, font=_font(10), fill=(203, 213, 225))
+        draw.text((32, top + 134 + line_index * 18), line, font=_font(12), fill=(203, 213, 225))
 
     core_cards = card.get("core_cards") or []
-    draw.text((22, y + 92), "核心卡", font=_font(9, True), fill=GOLD_DIM)
+    draw.text((32, top + 194), "核心卡", font=_font(10.5, True), fill=GOLD_DIM)
+    draw.text((96, top + 194), "优先围绕主系抓取", font=_font(9.5), fill=DIM)
     if core_cards:
-        x = 22
+        x = 32
         for item in core_cards[:3]:
-            x += _card_chip(draw, x, y + 108, item) + 5
-        effect = _wrap(draw, str(core_cards[0].get("desc", "")), _font(8.5), WIDTH - 44, 1)
-        if effect:
-            draw.text((22, y + 136), "· " + effect[0], font=_font(8.5), fill=MUTED)
+            x += _card_chip(draw, x, top + 212, item) + 6
+        effect = _wrap(draw, str(core_cards[0].get("desc", "")), _font(10), WIDTH - 64, 2)
+        for line_index, line in enumerate(effect):
+            draw.text((32, top + 242 + line_index * 14), "· " + line, font=_font(10), fill=MUTED)
     else:
-        draw.text((22, y + 108), "暂无卡牌数据", font=_font(9), fill=DIM)
+        draw.text((32, top + 212), "暂无卡牌数据", font=_font(10), fill=DIM)
 
     build_steps = (card.get("build") or {}).get("steps") or []
-    opening = [step for step in build_steps if not str(step).startswith("主路线") and not str(step).startswith("副路线")]
+    opening = [
+        step
+        for step in build_steps
+        if not str(step).startswith("主路线") and not str(step).startswith("副路线")
+    ]
     opening_line = str(opening[0]) if opening else "前 3 回合先补生存，4~10 回合集中堆主系。"
-    lines = _wrap(draw, opening_line, _font(9), WIDTH - 44, 1)
-    if lines:
-        draw.text((22, y + 156), "开局 · " + lines[0], font=_font(9), fill=MUTED)
-
-    talent = _skill_icon(card.get("talent_icon", ""), (16, 16))
-    if talent is not None:
-        image.paste(talent, (WIDTH - 74, y + 88), talent)
-    ultimate = _skill_icon(card.get("ultimate_icon", ""), (16, 16))
-    if ultimate is not None:
-        image.paste(ultimate, (WIDTH - 44, y + 88), ultimate)
-
-    draw.line([22, y + SECTION_H - 10, WIDTH - 22, y + SECTION_H - 10], fill=BORDER, width=1)
+    draw.text((32, top + 278), "开局", font=_font(10.5, True), fill=GOLD_DIM)
+    lines = _wrap(draw, opening_line, _font(10.5), WIDTH - 64, 2)
+    for line_index, line in enumerate(lines):
+        draw.text((32, top + 296 + line_index * 15), "· " + line, font=_font(10.5), fill=(180, 192, 206))
 
 
 def render_result(
@@ -344,11 +364,18 @@ def render_result(
     image = Image.new("RGB", (WIDTH, height), BG)
     draw = ImageDraw.Draw(image)
     _common_header(draw, "选技大乱斗 · 浮窗助手", "拖动 · %s 隐藏" % toggle_key)
+    hero_count = len(cards)
+    draw.text(
+        (22, 35),
+        "共 %d 个英雄%s" % (hero_count, " · 滚轮查看全部" if hero_count > 2 else ""),
+        font=_font(9.5),
+        fill=DIM,
+    )
     if warning:
         draw.text((WIDTH - 22, 30), warning, font=_font(9), fill=(206, 160, 98), anchor="ra")
 
     for index, card in enumerate(cards):
-        _render_hero_section(draw, image, card, 44 + index * SECTION_H, index)
+        _render_hero_section(draw, image, card, HEADER_H + index * SECTION_H, index)
 
     school_y = HEADER_H + SECTION_H * len(cards) + 4
     enabled = (result.get("draft") or {}).get("enabled") or []

@@ -1,0 +1,43 @@
+# 真实帧 holdout
+
+这个目录存放**真实游戏窗口**的完整客户区截图，用于测识别准确率，而不是只跑两套固定样例。
+
+目标是 50–100 组，覆盖：
+
+- 1080p / 2K / 4K、窗口化 / 无边框；
+- 1–5 个英雄，包含“特权解锁”“随机”占位；
+- 不同亮度、背景、HUD 缩放；
+- 启用/禁用流派组合。
+
+## 采集
+
+1. 游戏使用**无边框窗口**，不要独占全屏。
+2. 截取完整客户区（不包含标题栏和桌面）。
+3. 选一张名牌和流派都稳定的帧，避免动画中间态。
+4. 用导入脚本登记，脚本会复制图片、规范化英雄别名并原子写入 `meta.json`：
+
+```powershell
+python -X utf8 tools/import_validation.py `
+  --image "D:\captures\holdout_001.png" `
+  --name holdout_001 `
+  --heroes "森林游侠,神秘法师,魔镜" `
+  --schools "普攻流,大招流" `
+  --note "2560x1600 无边框，HUD 100%"
+```
+
+- 英雄名可以写别名，会转成正式名；未知英雄会直接拒绝。
+- 流派不确定就省略 `--schools`，记为 `null`，不参与流派准确率。
+- 同名重导用 `--replace`；脚本不会静默覆盖。
+- 不要用合成图、截图拼接或改过名牌的图片充数。
+
+## 跑分
+
+```powershell
+python tools/run_accuracy.py `
+  --meta samples/validation/holdout/meta.json `
+  --min-cases 50 `
+  --strict `
+  --out holdout_accuracy.json
+```
+
+`--min-cases` 防止验证集被悄悄删小。当前样本不足 50 组时命令会失败，这是预期行为；先补样本，不要降低门槛。

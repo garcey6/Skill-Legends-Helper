@@ -5,9 +5,15 @@
 
 ## [Unreleased]
 
+### 新增
+
+- 识别模板按分辨率分组：`layout.json` 增加 `reference_resolution` 与 `template_groups`
+  （hd / fhd / qhd），自动识别在窗口宽度变化时切换模板组，共用文件时复用已加载的字模。
+- 真实帧导入脚本 `tools/import_validation.py`：复制截图、归一化英雄别名、拒绝未知/重复
+  标签，并原子写入 `meta.json`；`run_accuracy.py` 新增 `--min-cases` 门槛。
+
 ### 计划中
 
-- 识别模板按分辨率档位分组，`layout.json` 增加 `reference_resolution` 与 `template_groups`。
 - 扩充 50–100 组真实帧 holdout 验证集。
 - 提供 PyInstaller 免安装发行包。
 

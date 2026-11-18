@@ -25,6 +25,10 @@ python -m tools.live_recognize --live --pretty
 
 # 录一段真实帧序列（需要游戏窗口）
 python tools/record_frames.py --out samples/frames/draft_004 --frames 30
+
+# 把真实截图登记进 holdout（标签用正式名或别名）
+python -X utf8 tools/import_validation.py --image D:\captures\holdout_001.png `
+  --name holdout_001 --heroes "森林游侠,神秘法师,魔镜" --note "2560x1600 无边框"
 ```
 
 ## 测试
@@ -32,10 +36,10 @@ python tools/record_frames.py --out samples/frames/draft_004 --frames 30
 ```powershell
 python -m unittest discover -s tests -t . -v
 python tools/validate_cases.py --strict
-python tools/run_accuracy.py --strict
+python tools/run_accuracy.py --strict --min-cases 2
 ```
 
-当前共 **72 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **74 项**。覆盖：
+当前共 **95 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **97 项**。覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；
@@ -46,10 +50,13 @@ python tools/run_accuracy.py --strict
 - API keep-alive、`/api/overlay/capture` 触发、图鉴 API、素材自检；
 - 浮窗状态渲染、快捷键解析，包括 `Alt+C / Alt+X`；
 - 验证集准确率回归：槽位/英雄名准确率、P50/P95 延迟、失败明细；
+- 真实帧导入：别名归一、未知/重复标签拒绝、原子写入、`--min-cases` 门槛；
 - 仓库治理：许可证、风险说明、Issue 模板、五个 `.agents/skills` 的前置元数据。
 
 `tools/run_accuracy.py` 默认读取 `samples/validation/meta.json`，逐张输出期望/实际英雄名与耗时；
-`--strict` 在任一案例不一致或验证集为空时返回 1。CI 使用同一命令，并上传 `accuracy.json`。
+`--strict` 在任一案例不一致或验证集为空时返回 1，`--min-cases N` 进一步要求至少 N 组。
+CI 使用 `--min-cases 2` 并上传 `accuracy.json`；真实 holdout 的采集、导入和 50 组门槛见
+[HOLDOUT](HOLDOUT.md)。
 
 ## 文件结构
 
@@ -115,6 +122,7 @@ python tools/run_accuracy.py --strict
 │  ├─ draft_001.png / window_draft.png
 │  ├─ frames/draft_001 / draft_002   # 回放夹具
 │  └─ validation/            # 两套真实窗口验证图 + meta.json
+│     └─ holdout/            # 真实帧 holdout（由 import_validation.py 登记）
 ├─ tools/
 │  ├─ preview_draft.py       # 全屏示例
 │  ├─ import_game_data.py    # Excel/规则 → JSON
@@ -130,6 +138,7 @@ python tools/run_accuracy.py --strict
 │  ├─ calibrate_thresholds.py    # margin 分布
 │  ├─ validate_cases.py      # 两套验证图逐槽位检查
 │  ├─ run_accuracy.py        # 槽位/名字准确率与 P50/P95
+│  ├─ import_validation.py   # 真实截图登记进验证/holdout
 │  └─ live_recognize.py      # 自动识别 CLI
 ├─ docs/
 ├─ tests/

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from tools.run_accuracy import compute_metrics, percentile
+from tools.run_accuracy import compute_metrics, percentile, strict_failure
 
 
 class AccuracyMetricsTest(unittest.TestCase):
@@ -40,6 +40,14 @@ class AccuracyMetricsTest(unittest.TestCase):
         self.assertEqual(metrics["slot_accuracy"], 0.0)
         self.assertEqual(metrics["name_accuracy"], 0.0)
         self.assertEqual(metrics["p95_ms"], 0.0)
+
+    def test_strict_failure_honors_min_cases(self) -> None:
+        metrics = compute_metrics([{"expected": ["A"], "actual": ["A"], "latency_ms": 1}])
+        self.assertFalse(strict_failure(metrics, min_cases=1))
+        self.assertTrue(strict_failure(metrics, min_cases=2))
+        self.assertTrue(strict_failure(compute_metrics([]), min_cases=0))
+        failed = compute_metrics([{"expected": ["A"], "actual": [None], "latency_ms": 1}])
+        self.assertTrue(strict_failure(failed, min_cases=1))
 
 
 class CurrentValidationCasesTest(unittest.TestCase):

@@ -23,8 +23,8 @@
 
 ## 质量与发版
 
-- **多分辨率模板分组**：`layout.json` 增加 `reference_resolution` 与 `template_groups`，按 1080p / 2K / 窗口化档位选择模板，避免不同缩放下互相干扰。
-- **真实帧 holdout 扩充**：在现有 `samples/validation` 两套案例之外，补 50–100 组不同窗口、亮度、英雄数量的真实帧，纳入 `tools/run_accuracy.py` 的槽位/名字准确率与 P50/P95 门禁。
+- **多分辨率模板分组**：已支持 `reference_resolution` 与 `template_groups`（hd / fhd / qhd），按窗口宽度切换模板；后续可在不同档位放入独立模板文件，而不是共用一套。
+- **真实帧 holdout 扩充**：导入与 `--min-cases` 门槛已就绪（见 [HOLDOUT](HOLDOUT.md)）；仍需补 50–100 组不同窗口、亮度、英雄数量的真实帧，纳入 CI 门禁。
 - **免安装发行包**：用 PyInstaller 打包浮窗、网页控制台和识别资产，附版本号与校验值。
 - **识别报告归档**：CI 上传 `accuracy.json`，按提交保留趋势，便于定位准确率回退。
 

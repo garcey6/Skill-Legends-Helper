@@ -43,7 +43,7 @@ jobs:
         run: python tools/validate_cases.py --strict
 
       - name: Accuracy regression
-        run: python tools/run_accuracy.py --strict --out accuracy.json
+        run: python tools/run_accuracy.py --strict --min-cases 2 --out accuracy.json
 
       - name: Upload accuracy report
         if: always()

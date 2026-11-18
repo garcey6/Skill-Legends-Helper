@@ -1,0 +1,4 @@
+{
+  "description": "真实游戏窗口 holdout；每张图由 tools/import_validation.py 登记，英雄名使用正式名，流派未知可留 null。",
+  "cases": []
+}

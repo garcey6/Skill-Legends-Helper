@@ -96,6 +96,16 @@ def compute_metrics(cases: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     }
 
 
+def strict_failure(metrics: Mapping[str, Any], min_cases: int = 0) -> bool:
+    """Return True when a strict run should fail the build."""
+    count = int(metrics.get("cases") or 0)
+    if count == 0:
+        return True
+    if count < max(0, int(min_cases)):
+        return True
+    return bool(metrics.get("failures"))
+
+
 def evaluate_validation(
     meta_path: Path = DEFAULT_META,
     base: Optional[Path] = None,
@@ -143,19 +153,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--base", type=Path, default=None, help="directory containing case images")
     parser.add_argument("--out", type=Path, default=None, help="write the JSON report here")
     parser.add_argument("--strict", action="store_true", help="exit 1 on any mismatch or empty set")
+    parser.add_argument(
+        "--min-cases",
+        type=int,
+        default=0,
+        help="with --strict, require at least this many cases",
+    )
     args = parser.parse_args(argv)
 
     report = evaluate_validation(args.meta, args.base)
+    report["strict"] = {
+        "min_cases": max(0, args.min_cases),
+        "failed": strict_failure(report["metrics"], args.min_cases),
+    }
     text = json.dumps(report, ensure_ascii=False, indent=2)
     print(text)
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(text + "\n", encoding="utf-8")
 
-    metrics = report["metrics"]
-    if args.strict and (metrics["cases"] == 0 or metrics["failures"]):
-        return 1
-    return 0
+    return 1 if args.strict and report["strict"]["failed"] else 0
 
 
 if __name__ == "__main__":

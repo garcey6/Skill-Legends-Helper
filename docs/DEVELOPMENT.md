@@ -31,24 +31,36 @@ python tools/record_frames.py --out samples/frames/draft_004 --frames 30
 
 ```powershell
 python -m unittest discover -s tests -t . -v
+python tools/validate_cases.py --strict
+python tools/run_accuracy.py --strict
 ```
 
-当前共 **61 项**，覆盖：
+当前共 **72 项**，覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；
-- 自动识别层：色度流派 + 白色符文决胜、RapidOCR 英雄名 + 字模兜底、两套回放夹具、run 数不符降级、稳定性/中位数；
+- 自动识别层：色度流派 + 白色符文决胜、RapidOCR 英雄名 + 字模兜底、两套回放夹具、run 数不符降级、稳定性/中位数、名牌碎片合并；
 - 攻略 frontmatter / 分段 / 60 篇加载；
 - 推荐排序、证据归属、核心被 ban 后分数下降、未知英雄兜底；
 - 核心卡选择、立绘/技能图标完整性；
 - API keep-alive、`/api/overlay/capture` 触发、图鉴 API、素材自检；
-- 浮窗状态渲染、快捷键解析，包括 `Alt+C / Alt+X`。
+- 浮窗状态渲染、快捷键解析，包括 `Alt+C / Alt+X`；
+- 验证集准确率回归：槽位/英雄名准确率、P50/P95 延迟、失败明细；
+- 仓库治理：许可证、风险说明、Issue 模板、五个 `.agents/skills` 的前置元数据。
+
+`tools/run_accuracy.py` 默认读取 `samples/validation/meta.json`，逐张输出期望/实际英雄名与耗时；
+`--strict` 在任一案例不一致或验证集为空时返回 1。CI 使用同一命令，并上传 `accuracy.json`。
 
 ## 文件结构
 
 ```text
 选技助手/
 ├─ 启动助手.bat              # 唯一入口菜单（浮窗/网页/设置/退出）
+├─ AGENTS.md                 # 仓库约定与提交前检查
+├─ LICENSE                   # MIT
+├─ CHANGELOG.md              # 版本变更记录
+├─ .agents/skills/           # 五个仓库内 AI 协作技能
+├─ .github/                  # CI 与 Issue/PR 模板
 ├─ agent.py                  # 浮窗主程序：热键 / 截图 / 识别 / 渲染
 ├─ run.py                    # 网页版入口
 ├─ app/
@@ -101,7 +113,8 @@ python -m unittest discover -s tests -t . -v
 │  └─ library.html / library.js / library.css
 ├─ samples/
 │  ├─ draft_001.png / window_draft.png
-│  └─ frames/draft_001 / draft_002   # 回放夹具
+│  ├─ frames/draft_001 / draft_002   # 回放夹具
+│  └─ validation/            # 两套真实窗口验证图 + meta.json
 ├─ tools/
 │  ├─ preview_draft.py       # 全屏示例
 │  ├─ import_game_data.py    # Excel/规则 → JSON
@@ -115,6 +128,8 @@ python -m unittest discover -s tests -t . -v
 │  ├─ seed_glyphs_from_samples.py # 真实字模样例
 │  ├─ record_frames.py       # 录真实回放帧
 │  ├─ calibrate_thresholds.py    # margin 分布
+│  ├─ validate_cases.py      # 两套验证图逐槽位检查
+│  ├─ run_accuracy.py        # 槽位/名字准确率与 P50/P95
 │  └─ live_recognize.py      # 自动识别 CLI
 ├─ docs/
 ├─ tests/

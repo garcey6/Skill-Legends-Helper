@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: tests-and-recognition
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: "utf-8"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -t . -v
+
+      - name: Validation fixtures
+        run: python tools/validate_cases.py --strict
+
+      - name: Accuracy regression
+        run: python tools/run_accuracy.py --strict --out accuracy.json
+
+      - name: Upload accuracy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accuracy-report
+          path: accuracy.json
+          if-no-files-found: ignore

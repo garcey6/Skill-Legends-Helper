@@ -1,6 +1,6 @@
 # 暂缓项实现计划：模板分组、真实帧 holdout、免安装发行包
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 把 `docs/ROADMAP.md` 中“质量与发版”的三项暂缓能力做成可运行、可测试、可验收的代码：多分辨率模板分组、真实帧 holdout 导入/门禁、PyInstaller 免安装包。
 
@@ -50,7 +50,7 @@
   - `AssetCache(layout, base_dir, names, use_ocr=True)`；方法 `for_width(client_width: int) -> AssetBundle`，同一分组只构建一次。
   - `LiveSampler(..., asset_provider: Optional[Callable[[int], Any]] = None)`；当宽度跨组时替换匹配器，不阻塞识别线程。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 创建 `tests/test_template_groups.py`，至少包含：
 
@@ -90,12 +90,12 @@ def test_cache_reuses_bundle_and_reports_group(self):
     self.assertEqual(cache.for_width(2560).group.id, "qhd")
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m unittest tests.test_template_groups -v`
 Expected: FAIL，`ModuleNotFoundError: No module named 'app.vision.assets'` 或缺少 `reference_resolution`。
 
-- [ ] **Step 3: Add layout metadata and implement `app/vision/assets.py`**
+- [x] **Step 3: Add layout metadata and implement `app/vision/assets.py`**
 
 `data/recognize/layout.json` 增加：
 
@@ -115,18 +115,18 @@ Expected: FAIL，`ModuleNotFoundError: No module named 'app.vision.assets'` 或�
 
 `AssetCache` 从分组路径读取 JSON，构建 `SchoolMatcher`（带 runes）、`GlyphMatcher`，OCR 只构建一次并在分组间共享；缓存键是 `group.id`。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m unittest tests.test_template_groups -v`
 Expected: PASS。
 
-- [ ] **Step 5: Integrate runtime selection**
+- [x] **Step 5: Integrate runtime selection**
 
 `app/live/sampler.py` 增加可选 `asset_provider`：在 `_capture_loop` 拿到 `state.client_w` 后调用 `bundle = self.asset_provider(width)`；若 `bundle is not self._assets`，更新 `self.school_matcher/glyph_matcher/ocr_matcher` 并记录 `self._assets`。`agent.py` 用 `AssetCache` 初始化初始 bundle（按 `layout["reference_resolution"]["width"]`），把 `cache.for_width` 传给 sampler；`tools/live_recognize.load_assets(width: Optional[int] = None)` 用 `select_template_group` 选择分组，返回 `"template_group": group.to_dict()`。
 
 在 `tests/test_sampler.py` 增加一个使用 fake provider 的断言：第一次抓帧后 `sampler._assets.group.id` 为 `fhd`，宽度跨到 `qhd` 后 `_assets` 改变且旧 matcher 不再被使用。测试用现有 fake source，不启动真实线程；直接调用内部选择方法或捕获循环的一帧均可，保持确定性。
 
-- [ ] **Step 6: Run affected tests and commit**
+- [x] **Step 6: Run affected tests and commit**
 
 Run: `python -m unittest tests.test_template_groups tests.test_sampler tests.test_live -v`
 Expected: PASS。
@@ -158,7 +158,7 @@ git commit -m "feat: select recognition templates by resolution group"
   - `strict_failure(metrics: Mapping[str, Any], min_cases: int = 0) -> bool`。
   - `run_accuracy.py --min-cases N`：`--strict` 时案例数少于 N 也返回 1。
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/test_validation_import.py` 用 `tempfile.TemporaryDirectory()` 和 Pillow 生成 `800x450` RGB 图片，断言：
 
@@ -190,12 +190,12 @@ def test_strict_failure_honors_min_cases(self):
     self.assertTrue(strict_failure(metrics, min_cases=2))
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `python -m unittest tests.test_validation_import tests.test_accuracy -v`
 Expected: FAIL，`ImportError: cannot import name 'import_case'` / `strict_failure`。
 
-- [ ] **Step 3: Implement importer and gate**
+- [x] **Step 3: Implement importer and gate**
 
 `tools/import_validation.py`：
 - `--image`（可重复）、`--name`、`--heroes`（逗号分隔）、`--schools`（可选，逗号分隔）、`--note`、`--dataset`（默认 `samples/validation/holdout`）、`--replace`。
@@ -207,12 +207,12 @@ Expected: FAIL，`ImportError: cannot import name 'import_case'` / `strict_failu
 
 `tools/run_accuracy.py` 增加 `strict_failure(metrics, min_cases=0)`：`cases == 0`、`cases < min_cases` 或 `failures` 非空都返回 True；CLI 增加 `--min-cases`，默认 0，已有行为不变。
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `python -m unittest tests.test_validation_import tests.test_accuracy -v`
 Expected: PASS。
 
-- [ ] **Step 5: Add the real-frame protocol and docs**
+- [x] **Step 5: Add the real-frame protocol and docs**
 
 `samples/validation/holdout/README.md` 说明目录用途，不提交真实截图前保持为空（可只放 README）。`docs/HOLDOUT.md` 写明：
 
@@ -224,7 +224,7 @@ Expected: PASS。
 
 在 `README.md` 的“更多文档”表格加入 `HOLDOUT`；`docs/DEVELOPMENT.md` 的测试段加入导入与门禁命令。
 
-- [ ] **Step 6: Run full verification and commit**
+- [x] **Step 6: Run full verification and commit**
 
 Run: `python -m unittest discover -s tests -t . -v`、`python tools/validate_cases.py --strict`、`python tools/run_accuracy.py --strict`；Expected: 全 PASS/0。
 
@@ -254,7 +254,7 @@ git commit -m "feat: add real-frame holdout importer and minimum-case gate"
   - `zip_release(folder: Path, version: str) -> Path`：生成 `dist/选技助手-<version>-win64.zip` 并写 `.sha256`。
   - CLI：`python tools/build_release.py [--check] [--no-zip] [--allow-no-ocr]`。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/test_release.py` 用临时目录构造 `data/settings.json`、`data/server_url.txt`、`data/captures/x.png`、`data/source/x.xlsx`、`data/recognize/layout.json`、`static/index.html`，断言：
 
@@ -279,12 +279,12 @@ def test_build_command_is_one_folder_and_sets_entrypoint(self):
 
 再加 `sha256_file` 对临时文件校验、`release_manifest` 含 `version` 与 `sha256`。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m unittest tests.test_release -v`
 Expected: FAIL，`ModuleNotFoundError: No module named 'tools.build_release'`。
 
-- [ ] **Step 3: Implement build script and package command**
+- [x] **Step 3: Implement build script and package command**
 
 `tools/build_release.py`：
 - `--check` 只打印将打包的条目并检查 `PyInstaller` 是否可用，不构建。
@@ -294,12 +294,12 @@ Expected: FAIL，`ModuleNotFoundError: No module named 'tools.build_release'`。
 - `release.json` 的 `commit` 用 `git rev-parse --short HEAD`，失败写 `"unknown"`；`built_at` 用 UTC ISO8601。
 - `requirements-build.txt` 只放 `pyinstaller>=6.10`，不混入运行时依赖。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m unittest tests.test_release -v`
 Expected: PASS。
 
-- [ ] **Step 5: Build and smoke-test a one-folder release**
+- [x] **Step 5: Build and smoke-test a one-folder release**
 
 先在临时构建目录安装构建依赖（不写进 `requirements.txt`）：
 
@@ -312,7 +312,7 @@ $env:PYTHONPATH = "$env:TEMP\xuanji-build"
 
 Expected: `dist/选技助手/选技助手.exe`、`dist/选技助手/release.json`、`dist/选技助手-0.1.0-win64.zip` 和 `.sha256` 存在。启动 exe，确认控制台打印“自动识别已开启”、网页端口可访问、`static` 与 `data/guides` 可从包内加载；如无法在本机启动，至少运行 `dist/选技助手/选技助手.exe --help` 确认冻结入口正常。
 
-- [ ] **Step 6: Add release docs and commit**
+- [x] **Step 6: Add release docs and commit**
 
 `docs/RELEASE.md` 写清：构建依赖、命令、产物结构、SHA256 校验、解压到可写目录、SmartScreen 提示、不包含用户设置/截图、卸载即删目录。`.gitignore` 增加 `build/`、`dist/`、`*.zip`。`README.md` 文档表加入 `RELEASE`；`CHANGELOG.md` 的 Unreleased 加入模板分组、holdout、免安装包。`docs/DEVELOPMENT.md` 增加构建命令。
 

@@ -101,6 +101,21 @@ class DynamicHeroTest(unittest.TestCase):
     def test_misread_special_plate_stops(self) -> None:
         self.assertEqual(names_for([("森林游侠", 0.99), ("特权解", 0.99), ("随机", 0.99)]), ["森林游侠"])
 
+    def test_glyph_fragments_merge_into_one_character(self) -> None:
+        matcher = GlyphMatcher(GLYPHS, NAMES)
+        boxes = [
+            (0, 0, 10, 5, 40),    # top of 皇
+            (0, 6, 10, 12, 30),   # bottom of 皇
+            (20, 0, 30, 12, 80),  # 家
+            (40, 0, 50, 12, 80),  # 骑
+            (44, 4, 48, 10, 20),  # fragment inside 骑
+            (60, 0, 70, 12, 80),  # 士
+        ]
+        merged = matcher._merge_fragments(boxes)
+        self.assertEqual(len(merged), 4)
+        self.assertEqual(merged[0][:4], (0, 0, 10, 12))
+        self.assertEqual(merged[2][:4], (40, 0, 50, 12))
+
     def test_glyph_fallback_is_not_padded_to_three(self) -> None:
         matcher = GlyphMatcher(GLYPHS, NAMES)
 

@@ -139,7 +139,7 @@ def group_nameplates(
     """
     if not boxes:
         return []
-    y_tol = max(10.0, client_height * 0.03)
+    y_tol = max(10.0, client_height * 0.06)
     clusters: List[List[Tuple[int, int, int, int, int]]] = []
     for box in sorted(boxes, key=lambda item: (item[1] + item[3]) / 2.0):
         cy = (box[1] + box[3]) / 2.0

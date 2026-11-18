@@ -86,9 +86,37 @@ class GlyphMatcher:
                 break
         return out
 
+    @staticmethod
+    def _merge_fragments(boxes: List[Box]) -> List[Box]:
+        """Merge top/bottom pieces and inner fragments of one character.
+
+        Thin or dim outlines split a CJK glyph into several 4-connected
+        components.  Pieces whose x ranges overlap by at least half of the
+        narrower box belong to the same character.
+        """
+        merged: List[Box] = []
+        for box in sorted(boxes, key=lambda item: (item[0], item[1])):
+            x0, y0, x1, y1, area = box
+            for index, (mx0, my0, mx1, my1, marea) in enumerate(merged):
+                overlap = min(x1, mx1) - max(x0, mx0)
+                narrow = min(x1 - x0, mx1 - mx0)
+                if overlap > 0 and narrow > 0 and overlap >= 0.5 * narrow:
+                    merged[index] = (
+                        min(x0, mx0),
+                        min(y0, my0),
+                        max(x1, mx1),
+                        max(y1, my1),
+                        area + marea,
+                    )
+                    break
+            else:
+                merged.append(box)
+        return merged
+
     def match_nameplate(self, arr: np.ndarray, boxes: List[Box]) -> Dict[str, Any]:
         if not boxes:
             return {"name": None, "score": 0.0, "top": []}
+        boxes = self._merge_fragments(boxes)
         boxes = sorted(boxes, key=lambda b: b[0])
         best: List[Tuple[float, str, List[List[str]]]] = []
         for n in (2, 3, 4, 5):

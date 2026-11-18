@@ -80,7 +80,22 @@ class RapidOcrNameMatcher:
     def detect_plates(self, arr: np.ndarray, client_w: int) -> List[Tuple[int, int, int, int]]:
         """Detect stone nameplate rectangles in a nameplate ROI."""
         if cv2 is None:
-            return []
+            # OpenCV ships with the OCR engine but is not a hard project
+            # dependency.  The glyph groups give a reliable text bounding box
+            # even when a stone contour is unavailable.
+            plates: List[Tuple[int, int, int, int]] = []
+            for group in self._glyph_groups(arr, client_w):
+                if not group:
+                    continue
+                plates.append(
+                    (
+                        min(b[0] for b in group),
+                        min(b[1] for b in group),
+                        max(b[2] for b in group),
+                        max(b[3] for b in group),
+                    )
+                )
+            return plates[:MAX_HEROES]
         scale = max(0.45, min(2.5, client_w / 1800.0))
         hsv = cv2.cvtColor(arr.astype(np.uint8), cv2.COLOR_RGB2HSV)
         s, v = hsv[:, :, 1], hsv[:, :, 2]
@@ -178,6 +193,7 @@ class RapidOcrNameMatcher:
     def match(self, nameplates: np.ndarray, client_w: int, glyph_matcher: Any) -> Dict[str, Any]:
         plates = self.detect_plates(nameplates, client_w)
         candidates: List[Optional[Dict[str, Any]]] = []
+        boundary_known = False
         for x0, y0, x1, y1 in plates[:MAX_HEROES]:
             pad_x = max(2, (x1 - x0) // 20)
             pad_y = max(2, (y1 - y0) // 20)
@@ -187,6 +203,7 @@ class RapidOcrNameMatcher:
             ]
             text, confidence = self._ocr_crop(crop)
             if _is_special_plate(text):
+                boundary_known = True
                 break
             index = len(candidates)
             name = self._resolve(text, confidence)
@@ -235,6 +252,11 @@ class RapidOcrNameMatcher:
                     "source": "glyph" if fallback.get("name") else None,
                     "ocr_text": candidates[index].get("ocr_text", ""),
                 }
+        # Without a readable special nameplate, trailing empty slots are the
+        # privilege/random slots; do not report them as missing heroes.
+        if not boundary_known:
+            while candidates and not candidates[-1].get("name"):
+                candidates.pop()
         return {
             "candidates": candidates[:MAX_HEROES],
             "glyph_coverage": 1.0 if self.available else 0.0,

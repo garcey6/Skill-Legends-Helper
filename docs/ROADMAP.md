@@ -25,7 +25,7 @@
 
 - **多分辨率模板分组**：已支持 `reference_resolution` 与 `template_groups`（hd / fhd / qhd），按窗口宽度切换模板；后续可在不同档位放入独立模板文件，而不是共用一套。
 - **真实帧 holdout 扩充**：导入与 `--min-cases` 门槛已就绪（见 [HOLDOUT](HOLDOUT.md)）；仍需补 50–100 组不同窗口、亮度、英雄数量的真实帧，纳入 CI 门禁。
-- **免安装发行包**：用 PyInstaller 打包浮窗、网页控制台和识别资产，附版本号与校验值。
+- **免安装发行包**：已提供 `tools/build_release.py`（one-folder、`release.json`、zip + SHA256），见 [RELEASE](RELEASE.md)；后续补 CI 自动构建、代码签名和安装器。
 - **识别报告归档**：CI 上传 `accuracy.json`，按提交保留趋势，便于定位准确率回退。
 
 ## 数据与复盘

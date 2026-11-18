@@ -39,7 +39,7 @@ python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2
 ```
 
-当前共 **95 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **97 项**。覆盖：
+当前共 **101 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **103 项**。覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；
@@ -139,6 +139,7 @@ CI 使用 `--min-cases 2` 并上传 `accuracy.json`；真实 holdout 的采集�
 │  ├─ validate_cases.py      # 两套验证图逐槽位检查
 │  ├─ run_accuracy.py        # 槽位/名字准确率与 P50/P95
 │  ├─ import_validation.py   # 真实截图登记进验证/holdout
+│  ├─ build_release.py       # one-folder PyInstaller 发行包
 │  └─ live_recognize.py      # 自动识别 CLI
 ├─ docs/
 ├─ tests/
@@ -209,6 +210,17 @@ python tools/build_templates.py
 - `data/captures/last.png`：最近一次截图。
 - `data/server_url.txt`：网页控制台实际地址。
 - `data/overlay_position.json`：浮窗位置。
+
+## 发行包
+
+```powershell
+python -m pip install -r requirements-build.txt
+python -X utf8 tools/build_release.py --dry-run   # 先看会打包哪些文件
+python -X utf8 tools/build_release.py
+```
+
+产物在 `dist/`，包含 one-folder 程序、`release.json`、zip 和 SHA256。`PyInstaller` 只放在
+`requirements-build.txt`，不要加进运行时依赖。细节和验收步骤见 [RELEASE](RELEASE.md)。
 
 ## 版本与提交
 

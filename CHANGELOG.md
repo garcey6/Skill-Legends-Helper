@@ -11,11 +11,13 @@
   （hd / fhd / qhd），自动识别在窗口宽度变化时切换模板组，共用文件时复用已加载的字模。
 - 真实帧导入脚本 `tools/import_validation.py`：复制截图、归一化英雄别名、拒绝未知/重复
   标签，并原子写入 `meta.json`；`run_accuracy.py` 新增 `--min-cases` 门槛。
+- 免安装发行包脚本 `tools/build_release.py`：one-folder PyInstaller、安全数据清单、
+  `release.json` 与 zip/SHA256；构建依赖单独放在 `requirements-build.txt`。
 
 ### 计划中
 
 - 扩充 50–100 组真实帧 holdout 验证集。
-- 提供 PyInstaller 免安装发行包。
+- 在 CI 中发布签名后的发行包。
 
 ## [0.1.0] - 2026-11-18
 

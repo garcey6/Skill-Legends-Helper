@@ -74,6 +74,7 @@
 | [SCORING_AND_RAG](docs/SCORING_AND_RAG.md) | 攻略库、检索、评分、AI 点评 |
 | [DEVELOPMENT](docs/DEVELOPMENT.md) | 命令行、测试、数据重建 |
 | [HOLDOUT](docs/HOLDOUT.md) | 真实帧采集、导入与准确率门槛 |
+| [RELEASE](docs/RELEASE.md) | 构建免安装发行包 |
 | [ROADMAP](docs/ROADMAP.md) | 后续可以扩展的方向 |
 | [DATA_SOURCES](docs/DATA_SOURCES.md) | 数据表、图片素材、社区来源与致谢 |
 

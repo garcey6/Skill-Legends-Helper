@@ -37,6 +37,10 @@ from app.vision.assets import AssetCache, reference_width  # noqa: E402
 from app.vision.recognizer import Recognizer  # noqa: E402
 
 CAPTURE_DIR = BASE_DIR / "data" / "captures"
+# A single unstable probe frame is normal (animations, cursor, menu fades).
+# Keep the analysis card visible until the draft has really been gone for a
+# while; otherwise the HUD alternates between result and "ready" cards.
+LIVE_READY_GRACE_SECONDS = 4.0
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 
@@ -153,6 +157,8 @@ class Agent:
         self.live_assets = None
         self.live_school_by_name: Dict[str, str] = {}
         self._live_has_result = False
+        self._live_ready_since: Optional[float] = None
+        self._live_last_image = None
         self._auto_hud_hidden = False
         self._capture_gate = threading.Event()
         self.events: "queue.Queue[str]" = queue.Queue()
@@ -329,12 +335,34 @@ class Agent:
             self.hud.root.after(50, self.poll)
 
     def _handle_live(self, state: str, result: Optional[Dict[str, Any]]) -> None:
-        if state in ("IDLE", "WATCHING", "STALE") and self._live_has_result:
+        now = time.monotonic()
+        if state == "READY":
+            self._live_ready_since = None
+        if self._live_has_result and state in ("IDLE", "WATCHING", "STALE"):
+            if state != "IDLE":
+                # WATCHING can be one bad probe frame while the game is still
+                # animating.  Debounce it so the HUD does not blink.
+                if self._live_ready_since is None:
+                    self._live_ready_since = now
+                if now - self._live_ready_since < LIVE_READY_GRACE_SECONDS:
+                    return
+            self._live_ready_since = None
             self._live_has_result = False
             if self.hud.visible:
                 self.hud.show_ready(self.server_url)
             return
         if not result or state != "READY":
+            if (
+                not self._live_has_result
+                and state == "READY"
+                and self.hud.visible
+                and self._live_last_image is not None
+            ):
+                # The game returned to the same draft after a temporary
+                # WATCHING gap; restore the last analysis instead of leaving
+                # the ready card on screen.
+                self.hud.show(self._live_last_image, self.last_game_hwnd)
+                self._live_has_result = True
             return
         schools = result.get("schools") or {}
         if schools.get("status") != "ok":
@@ -356,6 +384,7 @@ class Agent:
         self.last_game_hwnd = hwnd
         self.hud.show(image, hwnd)
         self._live_has_result = True
+        self._live_last_image = image
         top = (rec.get("recommendations") or [{}])[0]
         print(
             "[live] %s -> %s %.1f"

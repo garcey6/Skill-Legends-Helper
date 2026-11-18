@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import numpy as np
 
 from app.kb.recommend import Advisor
+from app.live.frame import Frame, SourceState
 from app.live.replaysrc import ImageFrameSource
 from app.live.sampler import LiveSampler, consistent_frames
 from app.vision.glyphs import GlyphMatcher
@@ -19,6 +20,29 @@ ROOT = Path(__file__).resolve().parent.parent
 LAYOUT = json.loads((ROOT / "data" / "recognize" / "layout.json").read_text(encoding="utf-8"))
 SCHOOLS = json.loads((ROOT / "data" / "recognize" / "schools_chroma.json").read_text(encoding="utf-8"))
 GLYPHS = json.loads((ROOT / "data" / "recognize" / "glyphs.json").read_text(encoding="utf-8"))
+
+
+class BlankSource:
+    """A found game window whose rune strip is temporarily not visible."""
+
+    def __init__(self) -> None:
+        self.frame_id = 0
+
+    def state(self) -> SourceState:
+        return SourceState(
+            found=True,
+            foreground=True,
+            client_w=1800,
+            client_h=1118,
+            capture_method="fake",
+            state="READY",
+            hwnd=1,
+        )
+
+    def grab(self, roi):
+        self.frame_id += 1
+        image = np.zeros((40, 200, 3), dtype=np.uint8)
+        return Frame(image=image, frame_id=self.frame_id, timestamp=0.0, roi=roi, source="fake")
 
 
 class SamplerTest(unittest.TestCase):
@@ -50,6 +74,27 @@ class SamplerTest(unittest.TestCase):
             [c.get("name") for c in results[0]["heroes"]["candidates"]],
             ["森林游侠", "神秘法师", "魔镜"],
         )
+
+    def test_watching_keeps_last_accepted_round(self) -> None:
+        advisor = Advisor()
+        matcher = SchoolMatcher(SCHOOLS, float(LAYOUT.get("margin_min", 0.012)))
+        glyph = GlyphMatcher(GLYPHS, [h["name"] for h in advisor.heroes])
+        sampler = LiveSampler(
+            BlankSource(),
+            LAYOUT,
+            matcher,
+            glyph,
+            lambda state, result: None,
+            interval_ms=30,
+        )
+        sampler._last_fingerprint = "森林游侠"
+        sampler._last_icons = np.zeros((40, 200, 3), dtype=np.uint8)
+        sampler._last_names = np.zeros((40, 200, 3), dtype=np.uint8)
+        sampler.start()
+        time.sleep(0.15)
+        sampler.stop()
+        time.sleep(0.05)
+        self.assertEqual(sampler._last_fingerprint, "森林游侠")
 
     def test_asset_provider_switches_bundle_on_width_change(self) -> None:
         advisor = Advisor()

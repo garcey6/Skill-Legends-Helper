@@ -165,7 +165,10 @@ class LiveSampler:
             self._select_assets(client_w)
             runs = self._probe_runs(icons_frame.image, client_w)
             if len(runs) != int(self.layout.get("expected_enabled", 8)):
-                self._clear_round()
+                # Keep the last accepted round.  Menu fades or one animated
+                # probe frame often hide the rune strip for a moment; clearing
+                # here forced a fresh 5-frame capture (and a HUD hide/show
+                # blink) on every such frame.
                 self._emit("WATCHING")
                 self._stop.wait(self.interval)
                 continue

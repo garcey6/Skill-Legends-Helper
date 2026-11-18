@@ -14,6 +14,12 @@
 - 免安装发行包脚本 `tools/build_release.py`：one-folder PyInstaller、安全数据清单、
   `release.json` 与 zip/SHA256；构建依赖单独放在 `requirements-build.txt`。
 
+### 修复
+
+- 实时识别遇到瞬时 `WATCHING`（菜单淡入、符文动画、单帧抖动）时，浮窗会在分析卡与
+  “浮窗已就绪”之间来回闪；现在保留已有分析卡，连续丢失选人界面超过 4 秒才回退到就绪
+  状态，并保留上一轮稳定帧避免反复触发 5 帧抓取。
+
 ### 计划中
 
 - 扩充 50–100 组真实帧 holdout 验证集。

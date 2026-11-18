@@ -28,11 +28,13 @@ def recognize_rois(
     started = time.perf_counter()
     client_w, client_h = int(client_size[0]), int(client_size[1])
     expected = int(layout.get("expected_enabled", 8))
+    resolution = layout.get("reference_resolution") or {}
+    reference_width = float(resolution.get("width", layout.get("reference_width", 1800)) or 1800)
     runs = segment_runs(
         icons,
         (0.0, 1.0, 0.0, 1.0),
         sat_th=int(layout.get("sat_th", 40)),
-        min_width=max(8, int(float(layout.get("min_run_w", 20)) * client_w / 1800.0)),
+        min_width=max(8, int(float(layout.get("min_run_w", 20)) * client_w / reference_width)),
     )
     scale = 1.0
     if runs:

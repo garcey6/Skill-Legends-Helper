@@ -33,10 +33,8 @@ from app.live.sampler import LiveSampler  # noqa: E402
 from app.live.win32src import WindowFrameSource  # noqa: E402
 from app.overlay.hotkey import MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, MOD_WIN, HotkeyManager, parse_combo  # noqa: E402
 from app.overlay.hud import Hud, render_error, render_loading, render_result  # noqa: E402
-from app.vision.glyphs import GlyphMatcher  # noqa: E402
-from app.vision.ocr import RapidOcrNameMatcher  # noqa: E402
+from app.vision.assets import AssetCache, reference_width  # noqa: E402
 from app.vision.recognizer import Recognizer  # noqa: E402
-from app.vision.schools import SchoolMatcher  # noqa: E402
 
 CAPTURE_DIR = BASE_DIR / "data" / "captures"
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -151,6 +149,8 @@ class Agent:
         self.live_school_matcher = None
         self.live_glyph_matcher = None
         self.live_ocr_matcher = None
+        self.live_asset_cache: Optional[AssetCache] = None
+        self.live_assets = None
         self.live_school_by_name: Dict[str, str] = {}
         self._live_has_result = False
         self._auto_hud_hidden = False
@@ -182,21 +182,20 @@ class Agent:
         try:
             recognize_dir = BASE_DIR / "data" / "recognize"
             self.live_layout = json.loads((recognize_dir / "layout.json").read_text(encoding="utf-8"))
-            school_data = json.loads((recognize_dir / "schools_chroma.json").read_text(encoding="utf-8"))
-            glyph_data = json.loads((recognize_dir / "glyphs.json").read_text(encoding="utf-8"))
-            runes_path = recognize_dir / "school_runes.json"
-            rune_data = json.loads(runes_path.read_text(encoding="utf-8")) if runes_path.exists() else None
             names = [h["name"] for h in self.advisor.heroes]
-            self.live_school_matcher = SchoolMatcher(
-                school_data,
-                float(self.live_layout.get("margin_min", 0.012)),
-                runes=rune_data,
-            )
-            self.live_glyph_matcher = GlyphMatcher(glyph_data, names)
-            self.live_ocr_matcher = RapidOcrNameMatcher(names)
+            self.live_asset_cache = AssetCache(self.live_layout, recognize_dir, names)
+            self.live_assets = self.live_asset_cache.for_width(reference_width(self.live_layout))
+            self.live_school_matcher = self.live_assets.school_matcher
+            self.live_glyph_matcher = self.live_assets.glyph_matcher
+            self.live_ocr_matcher = self.live_assets.ocr_matcher
             self.live_school_by_name = {s["name"]: s["id"] for s in self.advisor.schools}
-            if not self.live_ocr_matcher.available:
+            if self.live_ocr_matcher is not None and not self.live_ocr_matcher.available:
                 print("OCR 不可用，改用字模兜底：%s" % self.live_ocr_matcher.error, flush=True)
+            print(
+                "模板分组：%s（参考宽度 %dpx）"
+                % (self.live_assets.group.id, reference_width(self.live_layout)),
+                flush=True,
+            )
         except Exception as exc:
             print("自动识别不可用：%s" % exc, flush=True)
             return
@@ -208,11 +207,19 @@ class Agent:
             self.live_glyph_matcher,
             lambda state, result: self.live_queue.put((state, result)),
             ocr_matcher=self.live_ocr_matcher,
+            asset_provider=self._live_assets_for_width,
             before_capture=self._before_live_capture,
             after_capture=self._after_live_capture,
         )
         self.live_sampler.start()
         print("自动识别已开启：进入选人界面后无需按键。", flush=True)
+
+    def _live_assets_for_width(self, client_width: int):
+        if self.live_asset_cache is None:
+            return self.live_assets
+        bundle = self.live_asset_cache.for_width(client_width)
+        self.live_assets = bundle
+        return bundle
 
     def _before_live_capture(self) -> None:
         """Hide the overlay before the 5-frame ROI aggregate (Tk thread hop)."""

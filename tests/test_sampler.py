@@ -5,6 +5,7 @@ import json
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -49,6 +50,74 @@ class SamplerTest(unittest.TestCase):
             [c.get("name") for c in results[0]["heroes"]["candidates"]],
             ["森林游侠", "神秘法师", "魔镜"],
         )
+
+    def test_asset_provider_switches_bundle_on_width_change(self) -> None:
+        advisor = Advisor()
+        matcher = SchoolMatcher(SCHOOLS, float(LAYOUT.get("margin_min", 0.012)))
+        glyph = GlyphMatcher(GLYPHS, [h["name"] for h in advisor.heroes])
+        fhd = SimpleNamespace(
+            group=SimpleNamespace(id="fhd"),
+            school_matcher=matcher,
+            glyph_matcher=glyph,
+            ocr_matcher=None,
+        )
+        qhd = SimpleNamespace(
+            group=SimpleNamespace(id="qhd"),
+            school_matcher=matcher,
+            glyph_matcher=glyph,
+            ocr_matcher=None,
+        )
+        widths = []
+
+        def provider(width: int):
+            widths.append(width)
+            return qhd if width >= 2560 else fhd
+
+        sampler = LiveSampler(
+            ImageFrameSource(ROOT / "samples" / "draft_001.png"),
+            LAYOUT,
+            matcher,
+            glyph,
+            lambda state, result: None,
+            interval_ms=30,
+            asset_provider=provider,
+        )
+        self.assertTrue(sampler._select_assets(1920))
+        self.assertIs(sampler._assets, fhd)
+        self.assertTrue(sampler._select_assets(2200))
+        self.assertIs(sampler._assets, fhd)
+        self.assertTrue(sampler._select_assets(2560))
+        self.assertIs(sampler._assets, qhd)
+        self.assertEqual(widths, [1920, 2200, 2560])
+
+    def test_asset_provider_failure_keeps_previous_bundle(self) -> None:
+        advisor = Advisor()
+        matcher = SchoolMatcher(SCHOOLS, float(LAYOUT.get("margin_min", 0.012)))
+        glyph = GlyphMatcher(GLYPHS, [h["name"] for h in advisor.heroes])
+        good = SimpleNamespace(
+            group=SimpleNamespace(id="hd"),
+            school_matcher=matcher,
+            glyph_matcher=glyph,
+            ocr_matcher=None,
+        )
+
+        def provider(width: int):
+            if width >= 2560:
+                raise FileNotFoundError("missing qhd templates")
+            return good
+
+        sampler = LiveSampler(
+            ImageFrameSource(ROOT / "samples" / "draft_001.png"),
+            LAYOUT,
+            matcher,
+            glyph,
+            lambda state, result: None,
+            interval_ms=30,
+            asset_provider=provider,
+        )
+        self.assertTrue(sampler._select_assets(1280))
+        self.assertFalse(sampler._select_assets(2560))
+        self.assertIs(sampler._assets, good)
 
 
 if __name__ == "__main__":

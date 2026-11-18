@@ -1,6 +1,39 @@
 {
   "version": 1,
   "reference_width": 1800,
+  "reference_resolution": {
+    "width": 1800,
+    "height": 1118
+  },
+  "template_groups": [
+    {
+      "id": "hd",
+      "min_width": 0,
+      "max_width": 1919,
+      "reference_width": 1800,
+      "schools": "schools_chroma.json",
+      "runes": "school_runes.json",
+      "glyphs": "glyphs.json"
+    },
+    {
+      "id": "fhd",
+      "min_width": 1920,
+      "max_width": 2559,
+      "reference_width": 1800,
+      "schools": "schools_chroma.json",
+      "runes": "school_runes.json",
+      "glyphs": "glyphs.json"
+    },
+    {
+      "id": "qhd",
+      "min_width": 2560,
+      "max_width": null,
+      "reference_width": 1800,
+      "schools": "schools_chroma.json",
+      "runes": "school_runes.json",
+      "glyphs": "glyphs.json"
+    }
+  ],
   "rois": {
     "icons": [
       0.18,

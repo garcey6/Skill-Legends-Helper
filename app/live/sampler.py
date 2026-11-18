@@ -38,6 +38,7 @@ class LiveSampler:
         interval_ms: int = 250,
         before_capture: Optional[Callable[[], None]] = None,
         after_capture: Optional[Callable[[], None]] = None,
+        asset_provider: Optional[Callable[[int], Any]] = None,
     ) -> None:
         self.source = source
         self.layout = layout
@@ -47,6 +48,8 @@ class LiveSampler:
         self.callback = callback
         self.before_capture = before_capture
         self.after_capture = after_capture
+        self.asset_provider = asset_provider
+        self._assets: Any = None
         self.interval = max(0.05, interval_ms / 1000.0)
         self._stop = threading.Event()
         self._force = threading.Event()
@@ -97,6 +100,32 @@ class LiveSampler:
             except Exception:
                 pass
 
+    def _reference_width(self) -> float:
+        resolution = self.layout.get("reference_resolution") or {}
+        raw = resolution.get("width", self.layout.get("reference_width", 1800))
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            value = 1800.0
+        return value if value > 0 else 1800.0
+
+    def _select_assets(self, client_width: int) -> bool:
+        """Swap to the template bundle for this width; keep the old one on error."""
+        if self.asset_provider is None:
+            return False
+        try:
+            bundle = self.asset_provider(int(client_width))
+        except Exception:
+            return False
+        if bundle is None:
+            return False
+        if bundle is not self._assets:
+            self._assets = bundle
+            self.school_matcher = bundle.school_matcher
+            self.glyph_matcher = bundle.glyph_matcher
+            self.ocr_matcher = bundle.ocr_matcher
+        return True
+
     def _probe_runs(self, icons: np.ndarray, client_w: int) -> list:
         # Cheap probe: stride 2, no PIL resize.  Stride 4 loses narrow runs at
         # 900-1280px client widths, so keep 2 and accept ~1ms extra.
@@ -105,7 +134,7 @@ class LiveSampler:
             small,
             (0.0, 1.0, 0.0, 1.0),
             sat_th=int(self.layout.get("sat_th", 40)),
-            min_width=max(2, int(float(self.layout.get("min_run_w", 20)) * client_w / 1800.0 / 2)),
+            min_width=max(2, int(float(self.layout.get("min_run_w", 20)) * client_w / self._reference_width() / 2)),
         )
 
     def _clear_round(self) -> None:
@@ -132,7 +161,9 @@ class LiveSampler:
                 self._stop.wait(0.7)
                 continue
             grab_ms = (time.perf_counter() - started) * 1000.0
-            runs = self._probe_runs(icons_frame.image, state.client_w or icons_frame.image.shape[1])
+            client_w = state.client_w or icons_frame.image.shape[1]
+            self._select_assets(client_w)
+            runs = self._probe_runs(icons_frame.image, client_w)
             if len(runs) != int(self.layout.get("expected_enabled", 8)):
                 self._clear_round()
                 self._emit("WATCHING")

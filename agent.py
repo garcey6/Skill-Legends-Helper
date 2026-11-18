@@ -499,7 +499,15 @@ class Agent:
             pass
 
 
+def ensure_std_streams() -> None:
+    """PyInstaller --windowed gives sys.stdout/stderr = None; print() would crash."""
+    for name in ("stdout", "stderr"):
+        if getattr(sys, name) is None:
+            setattr(sys, name, open(os.devnull, "w", encoding="utf-8"))
+
+
 def main(argv=None) -> int:
+    ensure_std_streams()
     parser = argparse.ArgumentParser(description="选技大乱斗 · 浮窗助手")
     parser.add_argument("--capture-key", default="Alt+C", help="识别快捷键，默认 Alt+C")
     parser.add_argument("--toggle-key", default="Alt+X", help="显示/隐藏快捷键，默认 Alt+X")

@@ -39,7 +39,7 @@ python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2
 ```
 
-当前共 **101 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **103 项**。覆盖：
+当前共 **102 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **104 项**。覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；

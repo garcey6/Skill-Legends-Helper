@@ -11,6 +11,7 @@ data/captures/
 data/server_url.txt
 data/overlay_position.json
 data/meta_stats.json
+accuracy.json
 
 # Test browser profiles
 .chrome-*/

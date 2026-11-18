@@ -43,7 +43,7 @@ DATA_FORBIDDEN_DIRS = {
     "data/__pycache__",
 }
 TOP_LEVEL_FILES = ("README.md", "LICENSE", "CHANGELOG.md")
-DOC_FILES = ("USER_GUIDE.md", "RISK.md", "DEVELOPMENT.md", "HOLDOUT.md", "ROADMAP.md")
+DOC_FILES = ("USER_GUIDE.md", "RISK.md", "DEVELOPMENT.md", "HOLDOUT.md", "RELEASE.md", "ROADMAP.md")
 
 
 @dataclass(frozen=True)

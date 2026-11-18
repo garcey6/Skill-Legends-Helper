@@ -1,0 +1,41 @@
+name: 功能建议
+description: 提出识别、浮窗、攻略库或使用流程上的改进
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 现在哪里不方便？请描述具体场景，而不是只写“优化一下”。
+      placeholder: 例如：5 个英雄时滚轮很难发现下面还有内容。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 你希望它变成什么样？可以附草图或参考产品。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 备选方案
+      description: 你考虑过但觉得不合适的做法。
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影响范围
+      options:
+        - 浮窗
+        - 识别 / OCR
+        - 攻略库 / 推荐
+        - 网页控制台
+        - 启动与安装
+        - 文档
+        - 其他
+    validations:
+      required: true

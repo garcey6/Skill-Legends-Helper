@@ -1,0 +1,60 @@
+name: 识别错误 / Bug
+description: 报告识别错误、浮窗异常、启动失败或其他可复现问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量附上截图和分辨率；没有截图时，请描述名单位置和窗口模式。
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 你期望看到什么？实际看到了什么？
+      placeholder: 例如：界面有 4 个英雄，但浮窗只显示 3 个。
+    validations:
+      required: true
+  - type: input
+    id: resolution
+    attributes:
+      label: 分辨率与缩放
+      description: 游戏窗口分辨率、Windows 显示缩放比例（如 2560x1440 / 150%）。
+      placeholder: 2560x1440，150%
+    validations:
+      required: true
+  - type: dropdown
+    id: window-mode
+    attributes:
+      label: 游戏窗口模式
+      options:
+        - 无边框窗口
+        - 窗口化
+        - 独占全屏
+        - 不确定
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 截图
+      description: 拖入选人界面截图，最好包含顶部英雄名牌和底部 8 个流派图标。不会公开你的账号信息，但请自行遮挡昵称。
+      placeholder: 把截图拖到这里。
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: 控制台输出
+      description: 粘贴启动窗口或 `data/` 中的错误日志；请先删除个人路径和令牌。
+      render: text
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: 版本 / 提交
+      description: 启动窗口显示的版本，或 `git rev-parse --short HEAD`。
+      placeholder: c2eb22f
+    validations:
+      required: false

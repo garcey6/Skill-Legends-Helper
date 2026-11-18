@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用与排障文档
+    url: https://github.com/garcey6/Skill-Legends-Helper/blob/main/docs/TROUBLESHOOTING.md
+    about: 先看启动、识别、浮窗与端口问题的排查步骤。
+  - name: 使用风险说明
+    url: https://github.com/garcey6/Skill-Legends-Helper/blob/main/docs/RISK.md
+    about: 截图限制、反作弊与账号风险，请先阅读。

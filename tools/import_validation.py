@@ -8,6 +8,7 @@ case registered without its screenshot (or vice versa).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -120,6 +121,34 @@ def _open_rgb(image_path: Path) -> Image.Image:
         raise ValueError("无法读取图片 %s：%s" % (image_path, exc)) from exc
 
 
+def image_digest(image: Image.Image) -> str:
+    """Hash decoded RGB pixels so JPEG/PNG encodings of one frame compare equal."""
+    return hashlib.sha256(image.convert("RGB").tobytes()).hexdigest()
+
+
+def _existing_digest(case: Dict[str, Any], dataset: Path) -> str:
+    digest = str(case.get("sha256") or "")
+    if digest:
+        return digest
+    client = dataset / str(case.get("client") or "")
+    if not client.is_file():
+        return ""
+    try:
+        with Image.open(client) as image:
+            image.load()
+            return image_digest(image)
+    except Exception:
+        return ""
+
+
+def _same_labels(case: Dict[str, Any], heroes: Sequence[str], schools: Optional[Sequence[str]]) -> bool:
+    expected = case.get("expected") or {}
+    old_heroes = list(expected.get("heroes") or [])
+    old_schools = expected.get("schools")
+    new_schools = None if schools is None else list(schools)
+    return old_heroes == list(heroes) and (old_schools or None) == new_schools
+
+
 def import_case(
     image: Path,
     name: str,
@@ -155,13 +184,36 @@ def import_case(
             if case.get("client") == client_name:
                 raise ValueError("图片名已被其他案例占用：%s" % client_name)
 
+    digest = image_digest(rgb)
+    resolution = [rgb.width, rgb.height]
+    for case in cases:
+        if existing is not None and case is existing:
+            continue
+        same_digest = _existing_digest(case, dataset) == digest
+        same_size = list(case.get("resolution") or []) == resolution
+        if same_digest:
+            raise ValueError(
+                "图片内容重复：与案例 %s 是同一帧（不要用同屏连拍充数）"
+                % case.get("name")
+            )
+        if same_size and _same_labels(case, hero_names, school_names):
+            raise ValueError(
+                "尺寸与标签完全重复：与案例 %s 相同，请换一帧或改标注"
+                % case.get("name")
+            )
+
+    try:
+        source = str(image_path.resolve().relative_to(ROOT))
+    except ValueError:
+        source = str(image_path.resolve())
     case: Dict[str, Any] = {
         "name": case_name,
         "client": client_name,
         "expected": {"heroes": hero_names, "schools": school_names},
         "note": (note or "").strip(),
-        "resolution": [rgb.width, rgb.height],
-        "source": str(image_path.resolve()),
+        "resolution": resolution,
+        "sha256": digest,
+        "source": source,
     }
     if existing is None:
         cases.append(case)

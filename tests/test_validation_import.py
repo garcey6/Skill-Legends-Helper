@@ -58,6 +58,26 @@ class ImportValidationTest(unittest.TestCase):
         self.assertEqual(meta["cases"][0]["expected"]["heroes"], ["神秘法师"])
         self.assertEqual((self.dataset / "holdout_001.png").read_bytes(), original)
 
+    def test_same_image_under_another_name_is_rejected(self) -> None:
+        import_case(self.image, "holdout_001", ["神秘法师"], None, "", self.dataset, advisor=self.advisor)
+        with self.assertRaisesRegex(ValueError, "重复"):
+            import_case(self.image, "holdout_002", ["神秘法师"], None, "", self.dataset, advisor=self.advisor)
+        meta = json.loads((self.dataset / "meta.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(meta["cases"]), 1)
+
+    def test_same_size_and_labels_but_different_pixels_is_rejected(self) -> None:
+        import_case(self.image, "holdout_001", ["神秘法师"], None, "", self.dataset, advisor=self.advisor)
+        another = self.root / "another.png"
+        Image.new("RGB", (800, 450), (200, 10, 10)).save(another)
+        with self.assertRaisesRegex(ValueError, "尺寸与标签"):
+            import_case(another, "holdout_002", ["神秘法师"], None, "", self.dataset, advisor=self.advisor)
+
+    def test_import_records_sha256(self) -> None:
+        case = import_case(self.image, "holdout_001", ["神秘法师"], None, "", self.dataset, advisor=self.advisor)
+        digest = case["sha256"]
+        self.assertEqual(len(digest), 64)
+        self.assertTrue(all(ch in "0123456789abcdef" for ch in digest))
+
     def test_unknown_hero_and_school_are_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "未知英雄"):
             import_case(self.image, "holdout_001", ["不存在的英雄"], None, "", self.dataset, advisor=self.advisor)

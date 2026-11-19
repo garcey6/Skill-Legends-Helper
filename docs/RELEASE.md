@@ -19,8 +19,8 @@ dist/
 │  ├─ XuanJiHelper.exe
 │  ├─ release.json
 │  └─ _internal/            # Python 运行时 + data/ + static/
-└─ XuanJiHelper-0.1.0-windows-x64.zip
-└─ XuanJiHelper-0.1.0-windows-x64.zip.sha256
+└─ XuanJiHelper-0.2.3-windows-x64.zip
+└─ XuanJiHelper-0.2.3-windows-x64.zip.sha256
 ```
 
 先看会打包哪些文件、是否混入本地状态：
@@ -56,9 +56,27 @@ python -X utf8 tools/build_release.py --dry-run
 5. 用 `.sha256` 核对 zip：
 
 ```powershell
-Get-FileHash .\XuanJiHelper-0.1.0-windows-x64.zip -Algorithm SHA256
-Get-Content .\XuanJiHelper-0.1.0-windows-x64.zip.sha256
+Get-FileHash .\XuanJiHelper-0.2.3-windows-x64.zip -Algorithm SHA256
+Get-Content .\XuanJiHelper-0.2.3-windows-x64.zip.sha256
 ```
+
+## 发布到 GitHub Releases
+
+`.github/workflows/release.yml` 在推送 `v*` 标签时构建 Windows x64 包，并自动创建 Release、上传 zip 与 SHA256：
+
+```powershell
+git tag v0.2.3
+git push origin v0.2.3
+```
+
+Release 页面：<https://github.com/garcey6/Skill-Legends-Helper/releases>。
+
+手工发布时上传 `dist/XuanJiHelper-0.2.3-windows-x64.zip` 和同名 `.sha256`，发布说明至少写清：
+
+- 这是 Windows x64 免安装包，解压后运行 `XuanJiHelper.exe`；
+- exe 未签名，首次启动可能触发 SmartScreen/杀软误报，是否放行由用户判断；
+- 不含自动更新，升级时整包替换；
+- 安装 RapidOCR 时包更大，但识别更稳；纯字模包更小。
 
 ## 已知限制
 

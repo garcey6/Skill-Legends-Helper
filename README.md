@@ -12,6 +12,10 @@
 
 > 独占全屏会黑屏或盖不住浮窗，这是 Windows 限制；改成无边框窗口即可。
 
+## 下载免安装版
+
+不想装 Python 时，从 [GitHub Releases](https://github.com/garcey6/Skill-Legends-Helper/releases/latest) 下载 `XuanJiHelper-*-windows-x64.zip`，解压后双击 `XuanJiHelper.exe`；同目录的 `.sha256` 用于校验。仅支持 Windows x64，exe 未签名，首次运行可能触发 SmartScreen 或杀软误报，是否放行请自行判断。构建细节见 [RELEASE](docs/RELEASE.md)。
+
 <a href="docs/overlay-demo.jpg"><img src="docs/overlay-demo.jpg" alt="浮窗效果（示例画面）" width="720"></a>
 
 ## 亮点

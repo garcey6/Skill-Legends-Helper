@@ -45,10 +45,15 @@ jobs:
       - name: Accuracy regression
         run: python tools/run_accuracy.py --strict --min-cases 2 --out accuracy.json
 
-      - name: Upload accuracy report
+      - name: Real-frame holdout
+        run: python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 2 --out holdout_accuracy.json
+
+      - name: Upload accuracy reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: accuracy-report
-          path: accuracy.json
+          name: accuracy-reports
+          path: |
+            accuracy.json
+            holdout_accuracy.json
           if-no-files-found: ignore

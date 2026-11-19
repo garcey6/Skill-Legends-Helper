@@ -1,6 +1,8 @@
 # 真实帧 holdout 流程
 
-`tools/run_accuracy.py` 能算准确率，但只有两套固定验证图时，数字只能证明“这两张没坏”。本流程把真实截图持续纳入回归，目标是 50–100 组。
+`tools/run_accuracy.py` 能算准确率，但只有两套固定验证图时，数字只能证明“这两张没坏”。本流程把真实截图持续纳入回归，目标是 10 组起步、逐步扩到 50–100 组。
+
+当前仓库只有 **2 组**独立真实帧（1800×1118 无边框、2153×1179 窗口化），因此 CI 的 holdout 门槛暂时是 `--min-cases 2`；补到 10 组后再把门槛提到 8。不要为了凑数提交同屏连拍或合成图。
 
 ## 1. 采一帧
 
@@ -23,6 +25,8 @@ python -X utf8 tools/import_validation.py `
 - 未知英雄、重复英雄、未知流派会拒绝导入，避免把错标签写进基线。
 - 不确定流派时省略 `--schools`，记为 `null`。
 - 同名案例用 `--replace` 显式覆盖。
+- 导入器会拒绝**同一帧的重复内容**（按解码后的 RGB 像素计算 SHA-256），也会拒绝**分辨率 + 英雄 + 流派标签完全相同**的案例，避免把同屏连拍当独立样本。
+- 每张图会记录 `sha256`、`resolution` 和仓库内 `source`，便于复核来源。
 - 图片和 `meta.json` 都先写临时文件再替换，导入失败不会留下半套案例。
 
 默认目录是 `samples/validation/holdout`，也可以 `--dataset` 指到别处。
@@ -32,7 +36,7 @@ python -X utf8 tools/import_validation.py `
 ```powershell
 python tools/run_accuracy.py `
   --meta samples/validation/holdout/meta.json `
-  --min-cases 50 `
+  --min-cases 2 `
   --strict `
   --out holdout_accuracy.json
 ```
@@ -45,16 +49,18 @@ python tools/run_accuracy.py `
 - `p50_ms` / `p95_ms`：离线识别耗时；不是游戏内端到端延迟；
 - `failures`：逐案例期望/实际，便于定位。
 
-`--min-cases 50` 是防回退门槛：样本被删到 50 以下时 `--strict` 必须失败。当前仓库还没有 50 组真实帧，所以这个命令现在会失败；补样本后再把它接进 CI。
+`--min-cases` 是防回退门槛：实际案例少于门槛时 `--strict` 必须失败。CI 已经跑这条命令，当前门槛为 2；每补一批独立真实帧就往上提一档，达到 10 组后提到 8。
 
-## 4. 扩到 50–100 组
+## 4. 扩到 10 组（再扩到 50–100）
 
-建议按下面的桶分配，避免只测一种窗口：
+优先补齐这些桶，避免只测一种窗口：
 
-| 维度 | 建议 |
+| 维度 | 目标 |
 | --- | --- |
-| 分辨率 | 1080p 20 组、2K 20 组、4K/超宽 10 组 |
-| 英雄数 | 1 人 10 组、2 人 10 组、3 人 20 组、4–5 人 10 组 |
+| 分辨率 | 1080p 2 组、2K 2 组、4K/超宽 2 组，加上现有 1800px/2153px |
+| 窗口模式 | 无边框、窗口化都要有 |
+| 英雄数 | 至少 1 组 5 英雄，至少 1 组 1–2 英雄 |
+| 名牌 | 至少 1 组含“特权解锁/随机” |
 | 流派 | 至少覆盖 8 启用 / 5 禁用各一轮 |
 | 亮度 | 亮背景、暗背景各一半 |
 
@@ -63,6 +69,6 @@ python tools/run_accuracy.py `
 ## 5. 与固定样例的关系
 
 - `samples/validation/meta.json`：两套固定样例，CI 每次都跑，防止基础能力回退。
-- `samples/validation/holdout/meta.json`：真实分布，样本足够后作为更严格的门禁。
+- `samples/validation/holdout/meta.json`：真实分布，当前 2 组，已接入 CI；样本增加后提高 `--min-cases`。
 
-两条都使用 `tools/run_accuracy.py`，阈值和指标口径一致。
+两条都使用 `tools/run_accuracy.py`，阈值和指标口径一致。模板分组（hd/fhd/qhd）目前共享同一套 1800px 参考模板，选择逻辑已接入运行时，但尚未按分辨率重新采样；在补齐分组模板前，不要对外宣称已针对 4K 校准。

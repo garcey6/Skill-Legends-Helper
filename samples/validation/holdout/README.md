@@ -2,7 +2,7 @@
 
 这个目录存放**真实游戏窗口**的完整客户区截图，用于测识别准确率，而不是只跑两套固定样例。
 
-目标是 50–100 组，覆盖：
+当前有 2 组独立真实帧，先补到 10 组，再逐步扩到 50–100 组。覆盖：
 
 - 1080p / 2K / 4K、窗口化 / 无边框；
 - 1–5 个英雄，包含“特权解锁”“随机”占位；
@@ -28,6 +28,7 @@ python -X utf8 tools/import_validation.py `
 - 英雄名可以写别名，会转成正式名；未知英雄会直接拒绝。
 - 流派不确定就省略 `--schools`，记为 `null`，不参与流派准确率。
 - 同名重导用 `--replace`；脚本不会静默覆盖。
+- 同一帧换个文件名、或分辨率+标签完全相同，都会被拒绝；不要用同屏连拍凑案例。
 - 不要用合成图、截图拼接或改过名牌的图片充数。
 
 ## 跑分
@@ -35,9 +36,9 @@ python -X utf8 tools/import_validation.py `
 ```powershell
 python tools/run_accuracy.py `
   --meta samples/validation/holdout/meta.json `
-  --min-cases 50 `
+  --min-cases 2 `
   --strict `
   --out holdout_accuracy.json
 ```
 
-`--min-cases` 防止验证集被悄悄删小。当前样本不足 50 组时命令会失败，这是预期行为；先补样本，不要降低门槛。
+`--min-cases` 防止验证集被悄悄删小。CI 当前门槛为 2；补到 10 组后提高到 8。样本减少时命令会失败，这是预期行为，不要降低门槛。

@@ -5,25 +5,31 @@
 
 ## [Unreleased]
 
+### 计划中
+
+- 补到 10 组真实帧 holdout 后把 CI 门槛从 2 提到 8，再逐步扩到 50–100 组。
+- 为 hd / fhd / qhd 重新采样独立模板，而不是共用 1800px 参考模板。
+- 代码签名、安装器与自动更新。
+
+## [0.2.3] - 2026-11-19
+
 ### 新增
 
 - 识别模板按分辨率分组：`layout.json` 增加 `reference_resolution` 与 `template_groups`
   （hd / fhd / qhd），自动识别在窗口宽度变化时切换模板组，共用文件时复用已加载的字模。
 - 真实帧导入脚本 `tools/import_validation.py`：复制截图、归一化英雄别名、拒绝未知/重复
   标签，并原子写入 `meta.json`；`run_accuracy.py` 新增 `--min-cases` 门槛。
+- 真实帧 holdout 接入 CI（当前 2 组，门槛 2），并新增数据集卫生检查：同一帧换名、或
+  分辨率+标签完全重复会被拒绝。
 - 免安装发行包脚本 `tools/build_release.py`：one-folder PyInstaller、安全数据清单、
   `release.json` 与 zip/SHA256；构建依赖单独放在 `requirements-build.txt`。
+- `.github/workflows/release.yml`：推送 `v*` 标签自动构建并上传 GitHub Release。
 
 ### 修复
 
 - 实时识别遇到瞬时 `WATCHING`（菜单淡入、符文动画、单帧抖动）时，浮窗会在分析卡与
   “浮窗已就绪”之间来回闪；现在保留已有分析卡，连续丢失选人界面超过 4 秒才回退到就绪
   状态，并保留上一轮稳定帧避免反复触发 5 帧抓取。
-
-### 计划中
-
-- 扩充 50–100 组真实帧 holdout 验证集。
-- 在 CI 中发布签名后的发行包。
 
 ## [0.1.0] - 2026-11-18
 

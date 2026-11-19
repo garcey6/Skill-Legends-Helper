@@ -102,6 +102,14 @@ class AssetCacheTest(unittest.TestCase):
         assets = load_assets(use_ocr=False, width=2560)
         self.assertEqual(assets["template_group"]["id"], "qhd")
 
+    def test_live_agent_uses_the_resolution_aware_cache(self) -> None:
+        # Guard the runtime wiring itself: layout metadata and AssetCache are
+        # only useful if the live agent selects a bundle for the client width.
+        source = (ROOT / "agent.py").read_text(encoding="utf-8")
+        self.assertIn("AssetCache(", source)
+        self.assertIn("asset_provider=self._live_assets_for_width", source)
+        self.assertIn(".for_width(client_width)", source)
+
     def test_shared_templates_reuse_matchers_but_keep_group_identity(self) -> None:
         cache = AssetCache(
             LAYOUT,

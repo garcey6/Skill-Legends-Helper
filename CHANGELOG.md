@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+### 文档
+
+- 新增项目基建六件套：`PRD.md`、`RULES.md`、`ARCHITECTURE.md`、`DEVELOPMENT_LOG.md`、
+  `PLAN.md`、`ADR.md`；明确系统推荐与用户预设的边界、数据/资产契约、验收门槛阶梯和
+  “未核验”状态规则。
+- `AGENTS.md` 保留八荣八耻与硬约束，流程规范移入 `RULES.md`；补充“真实链路已引用”、
+  “样本量/来源”和“未核验”三条协作原则。
+- README 改为链接根目录六件套，修正此前指向不存在的 `docs/ARCHITECTURE.md`；文档明确
+  当前 UI 是 Tkinter，不引入 PyQt。
+
 ### 计划中
 
 - 补到 10 组真实帧 holdout 后把 CI 门槛从 2 提到 8，再逐步扩到 50–100 组。

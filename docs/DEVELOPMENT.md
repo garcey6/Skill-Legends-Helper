@@ -1,6 +1,9 @@
 # 开发与维护
 
 本文面向改代码、跑测试、重建数据的开发者。用户操作见 [USER_GUIDE](USER_GUIDE.md)。
+项目基建六件套在仓库根目录：[PRD](../PRD.md)、[RULES](../RULES.md)、
+[ARCHITECTURE](../ARCHITECTURE.md)、[DEVELOPMENT_LOG](../DEVELOPMENT_LOG.md)、
+[PLAN](../PLAN.md)、[ADR](../ADR.md)；协作入口见 [AGENTS](../AGENTS.md)。
 
 ## 本地运行
 
@@ -40,7 +43,7 @@ python tools/run_accuracy.py --strict --min-cases 2
 python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 2
 ```
 
-当前共 **114 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **116 项**。覆盖：
+当前共 **120 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **122 项**。覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；
@@ -53,7 +56,8 @@ python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --stric
 - 验证集准确率回归：槽位/英雄名准确率、P50/P95 延迟、失败明细；
 - 真实帧导入：别名归一、未知/重复标签拒绝、同帧/同标签重复拒绝、原子写入、`--min-cases` 门槛；
 - 真实帧 holdout：2 组独立画面（1800×1118 无边框、2153×1179 窗口化）的识别与 CI 门槛；
-- 仓库治理：许可证、风险说明、Issue 模板、五个 `.agents/skills` 的前置元数据。
+- 仓库治理：许可证、风险说明、Issue 模板、五个 `.agents/skills` 的前置元数据；
+- 项目基建：六件套存在、README 链接、关键契约（预设优先/字段级/非目标、未核验、只读资产与用户数据、Tkinter）。
 
 `tools/run_accuracy.py` 默认读取 `samples/validation/meta.json`，逐张输出期望/实际英雄名与耗时；
 `--strict` 在任一案例不一致或验证集为空时返回 1，`--min-cases N` 进一步要求至少 N 组。
@@ -65,7 +69,13 @@ CI 对固定验证集和真实 holdout 都跑 `--min-cases 2`，并上传 `accur
 ```text
 选技助手/
 ├─ 启动助手.bat              # 唯一入口菜单（浮窗/网页/设置/退出）
-├─ AGENTS.md                 # 仓库约定与提交前检查
+├─ PRD.md                    # 产品边界：系统推荐 / 用户预设
+├─ RULES.md                  # 开发流程、验证顺序、未核验规则
+├─ ARCHITECTURE.md           # 架构、线程、数据与资产契约
+├─ DEVELOPMENT_LOG.md        # 根因与正确做法
+├─ PLAN.md                   # 四阶段计划与门槛阶梯
+├─ ADR.md                    # 架构决策与待决项
+├─ AGENTS.md                 # AI/协作者最小入口、八荣八耻
 ├─ LICENSE                   # MIT
 ├─ CHANGELOG.md              # 版本变更记录
 ├─ .agents/skills/           # 五个仓库内 AI 协作技能
@@ -208,10 +218,16 @@ python tools/build_templates.py
 
 ## 运行时文件
 
+以下都是用户数据，不提交；当前仍在程序目录的 `data/` 下，后续按
+[ARCHITECTURE](../ARCHITECTURE.md) 的计划迁移到 `%APPDATA%`。
+
 - `data/settings.json`：保存网页设置后生成，可能包含 AI Key，已被 git 忽略。
-- `data/captures/last.png`：最近一次截图。
+- `data/captures/last.png`：最近一次手动截图。
+- `data/uploads/`：网页控制台上传的截图。
 - `data/server_url.txt`：网页控制台实际地址。
 - `data/overlay_position.json`：浮窗位置。
+- `data/guides/*.md`：60 篇攻略；网页控制台可编辑。**已知债务**：随包目录可能不可写，
+  安装到 `Program Files` 时请用免安装目录，或等待后续用户攻略覆盖层。
 
 ## 发行包
 

@@ -47,7 +47,7 @@
 
 ### 攻略库
 
-攻略是 `data/guides/` 下的 Markdown 文件，也可以直接在网页里编辑。保存后下一次识别立即生效，不需要重启。
+攻略是 `data/guides/` 下的 Markdown 文件，也可以直接在网页里编辑。保存后下一次识别立即生效，不需要重启。网页编辑需要程序目录可写；如果解压到 `Program Files` 等受保护目录，请改放到免安装目录再编辑。
 
 ## 常见问题
 
@@ -66,14 +66,27 @@
 **端口被占用？**  
 助手会自动顺延到后面的端口，以控制台或 `data/server_url.txt` 的实际地址为准。详见 [TROUBLESHOOTING](docs/TROUBLESHOOTING.md)。
 
-## 更多文档
+## 项目文档
+
+### 项目基建
+
+| 文档 | 内容 |
+| --- | --- |
+| [PRD](PRD.md) | 产品定位、系统推荐与用户预设的边界、非目标、验收口径 |
+| [RULES](RULES.md) | 开发流程、验证顺序、文档分档、“未核验”规则 |
+| [ARCHITECTURE](ARCHITECTURE.md) | 运行架构、线程、数据/资产契约、模板分组、已知限制 |
+| [DEVELOPMENT_LOG](DEVELOPMENT_LOG.md) | 根因与正确做法，避免重复踩坑 |
+| [PLAN](PLAN.md) | 四阶段计划、真实帧门槛阶梯、未闭环债务 |
+| [ADR](ADR.md) | 已接受的架构决策与待决项 |
+| [AGENTS](AGENTS.md) | 给 AI/协作者的最小入口、命令、八荣八耻 |
+
+### 更多文档
 
 | 文档 | 内容 |
 | --- | --- |
 | [INSTALL](docs/INSTALL.md) | 依赖、安装、启动器、快捷键参数 |
 | [USER_GUIDE](docs/USER_GUIDE.md) | 浮窗操作、图鉴、网页控制台、手动修正 |
 | [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) | 启动、识别、显示、性能、端口问题 |
-| [ARCHITECTURE](docs/ARCHITECTURE.md) | 架构、线程、截图、识别、已知限制 |
 | [live-perf](docs/live-perf.md) | 实时识别性能实测与回放夹具 |
 | [SCORING_AND_RAG](docs/SCORING_AND_RAG.md) | 攻略库、检索、评分、AI 点评 |
 | [DEVELOPMENT](docs/DEVELOPMENT.md) | 命令行、测试、数据重建 |

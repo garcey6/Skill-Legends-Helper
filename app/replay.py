@@ -20,7 +20,7 @@ from app.vision.pipeline import build_result, recognize_rois
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_LAYOUT = ROOT / "data" / "recognize" / "layout.json"
 FIXTURES_ROOT = ROOT / "tests" / "fixtures"
-FIXTURE_MINIMUM = 9
+FIXTURE_MINIMUM = 10
 FIXTURE_TARGET = 10
 
 

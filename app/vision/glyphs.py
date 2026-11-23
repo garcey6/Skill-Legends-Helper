@@ -57,6 +57,14 @@ def _partitions(count: int, parts: int) -> Iterable[Tuple[int, ...]]:
 
 
 class GlyphMatcher:
+    # Full-name fallback thresholds.  These are raw 16x16 template dot scores,
+    # averaged over the name's characters.  The values are calibrated against
+    # every real fixture: real names score above 147, while the special
+    # “特权解锁/随机” plates top out near 115.  Keep the margin requirement so
+    # the fallback cannot turn a near-tie into a confident wrong answer.
+    FULL_NAME_MIN_SCORE = 130.0
+    FULL_NAME_MIN_MARGIN = 20.0
+
     def __init__(self, data: Dict[str, Any], names: List[str]) -> None:
         self.size = int(data.get("size", 16))
         self.top_k = 5
@@ -65,6 +73,9 @@ class GlyphMatcher:
         owners = data.get("owners", [])
         self.owners = owners
         self.template_chars = [str(o.get("char", "")) for o in owners] if owners else self.chars
+        self._by_char: Dict[str, List[int]] = {}
+        for index, char in enumerate(self.template_chars):
+            self._by_char.setdefault(char, []).append(index)
         self.names = [n for n in names if 2 <= len(n) <= 5]
         self.by_len: Dict[int, List[str]] = {}
         for name in self.names:
@@ -113,6 +124,80 @@ class GlyphMatcher:
                 merged.append(box)
         return merged
 
+    def _fallback_name(
+        self, arr: np.ndarray, boxes: List[Box]
+    ) -> Optional[Dict[str, Any]]:
+        """Rank complete names by the best template score for every character.
+
+        The legacy top-5 gate is deliberately conservative: a character that
+        is visually close to several templates can rank below the fifth slot
+        and veto an otherwise obvious name.  This fallback keeps the same
+        segment partitions and closed-set names, but scores a name by the raw
+        template similarity of each character, then requires both an absolute
+        score and a margin over the runner-up.
+        """
+        if self.vectors.size == 0:
+            return None
+        ranked: List[Tuple[float, str]] = []
+        for n in (2, 3, 4, 5):
+            if n not in self.by_len or len(boxes) < n:
+                continue
+            for partition in _partitions(len(boxes), n):
+                groups: List[List[Box]] = []
+                cursor = 0
+                for take in partition:
+                    groups.append(boxes[cursor:cursor + take])
+                    cursor += take
+                char_scores: List[Dict[str, float]] = []
+                for group in groups:
+                    x0 = min(b[0] for b in group)
+                    y0 = min(b[1] for b in group)
+                    x1 = max(b[2] for b in group)
+                    y1 = max(b[3] for b in group)
+                    feature = glyph_feature(arr, (x0, y0, x1, y1), self.size)
+                    if feature is None:
+                        char_scores = []
+                        break
+                    scores = self.vectors @ feature
+                    char_scores.append(
+                        {
+                            char: float(scores[indexes].max())
+                            for char, indexes in self._by_char.items()
+                        }
+                    )
+                if len(char_scores) != n:
+                    continue
+                for name in self.by_len[n]:
+                    if not all(char in char_map for char, char_map in zip(name, char_scores)):
+                        continue
+                    score = sum(
+                        char_map[char] for char, char_map in zip(name, char_scores)
+                    ) / n
+                    ranked.append((score, name))
+        if not ranked:
+            return None
+        ranked.sort(key=lambda item: item[0], reverse=True)
+        unique: List[Tuple[float, str]] = []
+        seen = set()
+        for score, name in ranked:
+            if name in seen:
+                continue
+            seen.add(name)
+            unique.append((score, name))
+        top_score, top_name = unique[0]
+        if top_score < self.FULL_NAME_MIN_SCORE:
+            return None
+        if len(unique) > 1 and top_score - unique[1][0] < self.FULL_NAME_MIN_MARGIN:
+            return None
+        scale = float(self.size * self.size)
+        return {
+            "name": top_name,
+            "score": round(top_score / scale, 4),
+            "top": [name for _, name in unique[:5]],
+            "raw_score": round(top_score, 4),
+            "fallback": True,
+        }
+
     def match_nameplate(self, arr: np.ndarray, boxes: List[Box]) -> Dict[str, Any]:
         if not boxes:
             return {"name": None, "score": 0.0, "top": []}
@@ -153,12 +238,18 @@ class GlyphMatcher:
                         rank_score += 1.0 if rank == 0 else (0.75 if rank < 3 else 0.5)
                     best.append((rank_score / n, name, top))
         if not best:
+            fallback = self._fallback_name(arr, boxes)
+            if fallback is not None:
+                return fallback
             return {"name": None, "score": 0.0, "top": []}
         best.sort(key=lambda item: item[0], reverse=True)
         top_score = best[0][0]
         tied = [item for item in best if abs(item[0] - top_score) < 1e-6]
         unique = {name for _, name, _ in tied}
         if len(unique) != 1:
+            fallback = self._fallback_name(arr, boxes)
+            if fallback is not None:
+                return fallback
             return {"name": None, "score": 0.0, "top": best[0][2], "ambiguous": True}
         score, name, top = best[0]
         return {"name": name, "score": round(float(score), 4), "top": top}

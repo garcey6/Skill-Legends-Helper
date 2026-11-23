@@ -108,6 +108,18 @@
       ],
       "sha256": "b67448ddeba43d74fc6de30d3722efee56e8de825fa42b43e3f1a9fe81c6ce70",
       "source": "截图素材/screenshot_2560x1390_d.png"
+    },
+    {
+      "name": "screenshot_2560x1390_c",
+      "client": "../../../tests/fixtures/screenshots/screenshot_2560x1390_c.png",
+      "expected_file": "../../../tests/fixtures/expected/screenshot_2560x1390_c.json",
+      "note": "2560x1390 全屏截图；4英雄+随机；流派识别失败，记 null；字模首字“极”原识别失败，作为真实失败样本保留",
+      "resolution": [
+        2560,
+        1390
+      ],
+      "sha256": "a25f1c928cc0fe17482007c92a974edf3ba59ff3deee35d1c3beb4569ee716f6",
+      "source": "截图素材/2560x1390C.png"
     }
   ]
 }

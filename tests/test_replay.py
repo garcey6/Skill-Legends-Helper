@@ -15,12 +15,32 @@ from app.live.sources import CaptureSource, StaticFrameSource
 
 # 此阈值随 fixtures 增长同步上调，禁止下调。
 # M1 起点是两条已迁移的真实 holdout 用例；PLAN 阶段一目标是 10 条。
-# 2026-11-23 补入 7 条真实截图，达到 9 条；“极寒掌控者”那张暂不入库。
-FIXTURE_MINIMUM = 9
+# 2026-11-23 补入 8 条真实截图，达到 10 条；C 作为真实失败样本入库。
+FIXTURE_MINIMUM = 10
 FIXTURE_TARGET = 10
 
 
 class FixtureDiscoveryTest(unittest.TestCase):
+    def test_low_rank_character_is_recovered_by_full_name_fallback(self) -> None:
+        from app.replay import discover_cases, run_case
+
+        case = next(
+            item for item in discover_cases() if item.name == "screenshot_2560x1390_c"
+        )
+        result = run_case(case)
+        self.assertEqual(result["heroes"], case.expected["heroes"])
+
+    def test_full_name_fallback_does_not_return_special_plates(self) -> None:
+        from app.replay import discover_cases, run_case
+
+        case = next(
+            item for item in discover_cases() if item.name == "screenshot_2560x1390_c"
+        )
+        heroes = run_case(case)["heroes"]
+        self.assertEqual(len(heroes), 4)
+        self.assertNotIn("特权解锁", heroes)
+        self.assertNotIn("随机", heroes)
+
     def test_discovers_migrated_and_new_screenshot_cases(self) -> None:
         from app.replay import discover_cases
 
@@ -29,6 +49,7 @@ class FixtureDiscoveryTest(unittest.TestCase):
         self.assertIn("draft002_2153x1179", names)
         self.assertIn("screenshot_1920_30", names)
         self.assertIn("screenshot_2560x1390_a", names)
+        self.assertIn("screenshot_2560x1390_c", names)
 
     def test_fixture_count_meets_the_rising_floor(self) -> None:
         from app.replay import discover_cases

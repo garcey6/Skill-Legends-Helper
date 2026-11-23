@@ -76,7 +76,7 @@
   holdout、打包。Release 工作流由 `v*` 标签触发。
 - **备选**：Ubuntu + mock Win32；只在本地跑测试。
 - **后果**：CI 成本更高、启动更慢，但能覆盖真实平台。没有 RapidOCR 的本地环境会跳过部分
-  OCR 用例；文档必须写成“144 通过、3 跳过”这类当场核验的数字，不得沿用旧值。
+  OCR 用例；文档必须写成“146 通过、3 跳过”这类当场核验的数字，不得沿用旧值。
 - **证据**：`.github/workflows/ci.yml`；`.github/workflows/release.yml`。
 
 ## ADR-006 用户预设的存储形态（待决）
@@ -138,7 +138,7 @@
   dev 依赖放 `requirements-dev.txt`（继承运行时依赖并精确锁版本），打包显式排除 pytest/tests。
 - **备选**：新建 `CaptureSource` 协议并让 `LiveSampler` 改签名；继续用直接数组测试；把 pytest 加进运行时依赖。
 - **后果**：输入层不产生第二套抽象，识别管线签名不变；fixtures 是真实图用例的唯一标签来源，
-  holdout 仍负责 9 例 CI 准确率。pytest 只是开发依赖，不进 `requirements.txt` 或发行包；代价是
+  holdout 仍负责 10 例 CI 准确率。pytest 只是开发依赖，不进 `requirements.txt` 或发行包；代价是
   `tests/fixtures` 仍需遵守图片体积/git 卫生规则，且 M3 必须在 fixtures 上增加跨分辨率用例。
 - **证据**：`app/live/sources.py`、`app/replay.py`、`tests/test_replay.py`、
   `requirements-dev.txt`、`tools/build_release.py`、`tests/fixtures/`。
@@ -160,6 +160,25 @@
 - **证据**：`app/vision/debugframe.py`、`app/overlay/debug.py`、`tests/test_debug_overlay.py`、
   `tests/test_agent_debug.py`、`agent.py`。
 
+## ADR-011 字模 top5 漏字时使用闭集全名兜底
+
+- **日期**：2026-11-23
+- **状态**：已接受
+- **背景**：真实截图 C 的 `极寒掌控者` 首字 `极` 在 16×16 字模排序中只排到第 50，旧规则要求
+  每个字都进 top5，导致整名返回 `null`；按 top5 补模板或放宽 top5 会把“特权解锁/随机”也
+  放进候选。
+- **决策**：保留 top5 主路径；主路径找不到唯一名字时，按完整英雄名的逐字模板最高分重排，
+  仅接受平均分 ≥130 且领先第二名 ≥20 的闭集名字。`极寒掌控者` 作为真实失败样本入库，
+  不用它训练字模；特殊名牌保持 `null`。
+- **备选**：放宽 top5；给 `极` 补游戏字体字模；编辑距离/模糊匹配；OCR 失败直接返回 null。
+- **后果**：不增加运行时依赖，C 恢复为 4/4；代价是兜底路径比 top5 路径更慢（C 组英雄识别
+  约 286ms），且 10 组样本仍不足以证明对未见字体/分辨率全面成立。后续样本扩大时重新校准
+  阈值，不得用这 10 组反推“100% 通用”。
+- **证据**：`app/vision/glyphs.py` `_fallback_name` / `FULL_NAME_MIN_SCORE` /
+  `FULL_NAME_MIN_MARGIN`；`tests/fixtures/expected/screenshot_2560x1390_c.json`；
+  `tests/test_replay.py::FixtureDiscoveryTest::test_low_rank_character_is_recovered_by_full_name_fallback`；
+  `tests/test_accuracy.py` 10 组 holdout 计数。
+
 ## 决策索引
 
 | 编号 | 主题 | 状态 |
@@ -174,3 +193,4 @@
 | ADR-008 | 字段级合并语义 | 待决 |
 | ADR-009 | M1 回放复用 FrameSource / fixtures 唯一来源 | 已接受 |
 | ADR-010 | M2 调试浮层：Tkinter + 只读 DebugFrame | 已接受 |
+| ADR-011 | 字模 top5 漏字时闭集全名兜底 | 已接受 |

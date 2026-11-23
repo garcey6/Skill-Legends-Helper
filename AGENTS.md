@@ -31,8 +31,8 @@ python -m tools.live_recognize --replay samples/frames/draft_001
 
 如果本机没有 `python`，使用项目 `启动助手.bat` 里配置的 Python。
 pytest 会输出 fixture 数/目标 10/缺口；fixture 阈值只升不降。固定验证集用
-`--min-cases 2`，真实 holdout 当前 9 组、CI 门槛 8；都不是长期目标，样本增加后按
-[PLAN](PLAN.md) 阶梯提高，holdout 达到 10 组后门槛同步到 10 之前保持 8。
+`--min-cases 2`，真实 holdout 当前 10 组、CI 门槛 8（保留 2 组余量）；样本增加后按
+[PLAN](PLAN.md) 阶梯提高，不为了绿灯降低门槛。
 
 ## 仓库内 AI 技能
 

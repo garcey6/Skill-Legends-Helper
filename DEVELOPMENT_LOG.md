@@ -43,7 +43,7 @@
 - **证据**：`tools/import_validation.py` 的 `image_digest` / `_existing_digest` /
   `_same_labels`；`tests/test_validation_import.py` 的重复内容、同尺寸同标签用例；
   `.github/workflows/ci.yml` 的 holdout 步骤。
-- **状态**：防重复已完成；真实样本 9 组（新增 4 张 1080p/1600p 全屏截图和 3 张 2560×1390 四英雄截图），10 组门槛未达成；C 组因字模无法识别“极寒掌控者”未入库。
+- **状态**：防重复已完成；真实样本 10 组（新增 4 张 1080p/1600p 全屏截图和 4 张 2560×1390 四英雄截图），已达门槛；C 组作为“极寒掌控者”真实失败样本入库。
 
 ## 2026-11-19 三个模板组指向同一套 1800px 模板
 
@@ -133,7 +133,21 @@
 - **证据**：`app/live/sources.py`、`app/replay.py`、`app/__main__.py`、
   `tests/fixtures/`、`tests/test_replay.py`、`tests/conftest.py`、`requirements-dev.txt`、
   `tools/build_release.py`。
-- **状态**：已实现；fixture 9/10，缺口 1，阈值只升不降；9 组 holdout 已接入 CI，门槛 8。
+- **状态**：已实现；fixture 10/10，缺口 0，阈值只升不降；10 组 holdout 已接入 CI，门槛 8（保留 2 组余量）。
+
+## 2026-11-23 “极寒掌控者”首字被 top5 挡掉
+
+- **现象**：真实截图 C 的第一位英雄是 `极寒掌控者`，字模却返回 `null`；其他三位英雄正常。
+- **根因**：`极` 是合法字模，但 16×16 紧裁切 + 游戏字体描边让它的最高分排到第 50，未进
+  首字 top5；旧规则要求每个字都在 top5，整名被否决。按 top5 排名补字模或放宽 top5 都会把
+  特殊名牌也放进候选，不能解决精度问题。
+- **正确做法**：保留 top5 主路径；主路径找不到唯一名字时，按完整英雄名的逐字模板最高分
+  重排，再要求绝对分数 ≥130、领先第二名 ≥20。真实名最低 147，特殊名牌最高 115，阈值有
+  可解释间隔；C 组作为真实失败样本入库，而不是用 C 训练模板。
+- **证据**：`app/vision/glyphs.py` 的 `_fallback_name`、`FULL_NAME_MIN_SCORE`、
+  `FULL_NAME_MIN_MARGIN`；`tests/fixtures/expected/screenshot_2560x1390_c.json`；
+  `tests/test_replay.py::FixtureDiscoveryTest::test_low_rank_character_is_recovered_by_full_name_fallback`。
+- **状态**：已实现；10 组真实 fixture 全部通过，低于 10 组不得据此宣称全面达标。
 
 ## 2026-11-21 “未核验”不是免责声明
 

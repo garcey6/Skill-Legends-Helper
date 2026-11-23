@@ -52,8 +52,8 @@ python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --stric
 ```
 
 pytest 每次尾部打印 `holdout 用例数：N / 目标 10，缺口 N`；fixture 阈值只升不降。
-当前 pytest **144 项通过、3 项按环境跳过**（未装 RapidOCR 时）；安装 OCR 后条件用例会变化。
-fixtures 的图片与期望标签在 `tests/fixtures/`，现有 9 组；holdout 只保留引用，避免两套标签源。
+当前 pytest **146 项通过、3 项按环境跳过**（未装 RapidOCR 时）；安装 OCR 后条件用例会变化。
+fixtures 的图片与期望标签在 `tests/fixtures/`，现有 10 组；holdout 只保留引用，避免两套标签源。
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - M1 静态回放：fixtures 自动发现、真实图逐条断言、`python -m app --replay`、
@@ -68,7 +68,8 @@ fixtures 的图片与期望标签在 `tests/fixtures/`，现有 9 组；holdout 
 - 调试浮层：DebugFrame 内容、ROI/OCR/模板框坐标空间、失败原因、标注 PNG、用户目录、按需开关；
 - 验证集准确率回归：槽位/英雄名准确率、P50/P95 延迟、失败明细；
 - 真实帧导入：别名归一、未知/重复标签拒绝、同帧/同标签重复拒绝、原子写入、`--min-cases` 门槛；
-- 真实帧 holdout：9 组独立画面（1800×1118 无边框、2153×1179 窗口化、4 张 1080p/1600p 全屏压力样本、3 张 2560×1390 四英雄截图）的识别与 CI 门槛；C 组因字模无法识别“极寒掌控者”未入库；
+- 字模全名兜底：top5 漏字时按完整英雄名逐字模板分数重排，`极寒掌控者` 恢复；特殊名牌仍为 `null`；
+- 真实帧 holdout：10 组独立画面（1800×1118 无边框、2153×1179 窗口化、4 张 1080p/1600p 全屏压力样本、4 张 2560×1390 四英雄截图）的识别与 CI 门槛；C 组已入库，并由全名兜底识别“极寒掌控者”；
 - 仓库治理：许可证、风险说明、Issue 模板、五个 `.agents/skills` 的前置元数据；
 - 项目基建：六件套存在、README 链接、关键契约（预设优先/字段级/非目标、未核验、只读资产与用户数据、Tkinter）。
 

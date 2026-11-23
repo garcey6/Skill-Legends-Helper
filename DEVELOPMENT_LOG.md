@@ -43,7 +43,7 @@
 - **证据**：`tools/import_validation.py` 的 `image_digest` / `_existing_digest` /
   `_same_labels`；`tests/test_validation_import.py` 的重复内容、同尺寸同标签用例；
   `.github/workflows/ci.yml` 的 holdout 步骤。
-- **状态**：防重复已完成；真实样本仍只有 2 组，10 组门槛未达成。
+- **状态**：防重复已完成；真实样本 6 组（新增 4 张 1080p/1600p 全屏截图），10 组门槛未达成。
 
 ## 2026-11-19 三个模板组指向同一套 1800px 模板
 

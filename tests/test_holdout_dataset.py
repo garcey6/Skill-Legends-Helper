@@ -17,8 +17,8 @@ class HoldoutDatasetTest(unittest.TestCase):
         self.data = json.loads(META.read_text(encoding="utf-8"))
         self.cases = self.data.get("cases") or []
 
-    def test_has_at_least_two_independent_cases(self) -> None:
-        self.assertGreaterEqual(len(self.cases), 2)
+    def test_has_at_least_six_independent_cases(self) -> None:
+        self.assertGreaterEqual(len(self.cases), 6)
 
     def test_every_case_has_a_real_image_and_labels(self) -> None:
         for case in self.cases:

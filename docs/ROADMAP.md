@@ -24,7 +24,7 @@
 ## 质量与发版
 
 - **多分辨率模板分组**：已支持 `reference_resolution` 与 `template_groups`（hd / fhd / qhd），按窗口宽度切换模板；三个档位目前共用同一套 1800px 参考模板，后续需按档位重新采样独立模板，暂不要宣称已针对 4K 校准。
-- **真实帧 holdout 扩充**：已接入 2 组独立真实帧和 CI 门槛 2（见 [HOLDOUT](HOLDOUT.md)）；先补到 10 组并把门槛提到 8，再扩到 50–100 组不同窗口、亮度、英雄数量的真实帧。
+- **真实帧 holdout 扩充**：已接入 6 组独立真实帧和 CI 门槛 6（见 [HOLDOUT](HOLDOUT.md)）；再补 4 组到 10 组并把门槛提到 8，再扩到 50–100 组不同窗口、亮度、英雄数量的真实帧。
 - **免安装发行包**：已提供 `tools/build_release.py`（one-folder、`release.json`、zip + SHA256）和 `.github/workflows/release.yml`（`v*` 标签自动发布），见 [RELEASE](RELEASE.md)；后续补代码签名和安装器。
 - **识别报告归档**：CI 上传 `accuracy.json` 与 `holdout_accuracy.json`，按提交保留趋势，便于定位准确率回退。
 

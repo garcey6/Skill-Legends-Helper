@@ -205,7 +205,9 @@ def import_case(
     try:
         source = str(image_path.resolve().relative_to(ROOT))
     except ValueError:
-        source = str(image_path.resolve())
+        # External captures are copied into the holdout; keep only the file name
+        # so committed metadata never leaks a local user path.
+        source = image_path.name
     case: Dict[str, Any] = {
         "name": case_name,
         "client": client_name,

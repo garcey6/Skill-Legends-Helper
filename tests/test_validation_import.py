@@ -72,6 +72,18 @@ class ImportValidationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "尺寸与标签"):
             import_case(another, "holdout_002", ["神秘法师"], None, "", self.dataset, advisor=self.advisor)
 
+    def test_external_source_does_not_embed_local_absolute_path(self) -> None:
+        case = import_case(
+            self.image,
+            "holdout_001",
+            ["神秘法师"],
+            None,
+            "",
+            self.dataset,
+            advisor=self.advisor,
+        )
+        self.assertEqual(case["source"], "capture.png")
+
     def test_import_records_sha256(self) -> None:
         case = import_case(self.image, "holdout_001", ["神秘法师"], None, "", self.dataset, advisor=self.advisor)
         digest = case["sha256"]

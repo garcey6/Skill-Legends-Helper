@@ -40,10 +40,10 @@ python -X utf8 tools/import_validation.py --image D:\captures\holdout_001.png `
 python -m unittest discover -s tests -t . -v
 python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2
-python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 2
+python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 6
 ```
 
-当前共 **120 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **122 项**。覆盖：
+当前共 **121 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **123 项**。覆盖：
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
 - 缩放后的识别（1280px 宽）；
@@ -55,13 +55,13 @@ python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --stric
 - 浮窗状态渲染、快捷键解析，包括 `Alt+C / Alt+X`；
 - 验证集准确率回归：槽位/英雄名准确率、P50/P95 延迟、失败明细；
 - 真实帧导入：别名归一、未知/重复标签拒绝、同帧/同标签重复拒绝、原子写入、`--min-cases` 门槛；
-- 真实帧 holdout：2 组独立画面（1800×1118 无边框、2153×1179 窗口化）的识别与 CI 门槛；
+- 真实帧 holdout：6 组独立画面（1800×1118 无边框、2153×1179 窗口化、4 张 1080p/1600p 全屏压力样本）的识别与 CI 门槛；
 - 仓库治理：许可证、风险说明、Issue 模板、五个 `.agents/skills` 的前置元数据；
 - 项目基建：六件套存在、README 链接、关键契约（预设优先/字段级/非目标、未核验、只读资产与用户数据、Tkinter）。
 
 `tools/run_accuracy.py` 默认读取 `samples/validation/meta.json`，逐张输出期望/实际英雄名与耗时；
 `--strict` 在任一案例不一致或验证集为空时返回 1，`--min-cases N` 进一步要求至少 N 组。
-CI 对固定验证集和真实 holdout 都跑 `--min-cases 2`，并上传 `accuracy.json` 与
+CI 对固定验证集跑 `--min-cases 2`、对真实 holdout 跑 `--min-cases 6`，并上传 `accuracy.json` 与
 `holdout_accuracy.json`；真实 holdout 的采集、导入和补到 10 组的计划见 [HOLDOUT](HOLDOUT.md)。
 
 ## 文件结构

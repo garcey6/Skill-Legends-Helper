@@ -56,6 +56,82 @@
       ],
       "sha256": "a7e75334b229189613c15d11e79a94a5bb4dfc7f6dc25c53a8c6c00bbd040ef4",
       "source": "samples\\frames\\draft_002\\frame_01.png"
+    },
+    {
+      "name": "screenshot_1920_30",
+      "client": "screenshot_1920_30.png",
+      "expected": {
+        "heroes": [
+          "皇家骑士",
+          "长生梨妖",
+          "魔镜"
+        ],
+        "schools": null
+      },
+      "note": "1920x1080 全屏截图，30亮度；3 英雄，含特权解锁/随机；流派未人工复核，记 null",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "sha256": "fc234ddbf6e53c81a85351391cfb908635e675f6769c03b1ffba217acbb4fb89",
+      "source": "30亮度1920x1080.png"
+    },
+    {
+      "name": "screenshot_1920_80",
+      "client": "screenshot_1920_80.png",
+      "expected": {
+        "heroes": [
+          "霸者龙神",
+          "疾影剑卫",
+          "月隐猎手"
+        ],
+        "schools": null
+      },
+      "note": "1920x1080 全屏截图，80亮度；3 英雄，含特权解锁/随机；流派未人工复核，记 null",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "sha256": "c08f5e07263f04bba261598e6ba5c70a33cfb4b9346d2dd191d34dd4f214c960",
+      "source": "80亮度1920x1080.png"
+    },
+    {
+      "name": "screenshot_2560_30",
+      "client": "screenshot_2560_30.png",
+      "expected": {
+        "heroes": [
+          "苍穹飓风",
+          "瘟疫术士",
+          "狂暴战将"
+        ],
+        "schools": null
+      },
+      "note": "2560x1600 全屏截图，30亮度；3 英雄，含特权解锁/随机；流派未人工复核，记 null",
+      "resolution": [
+        2560,
+        1600
+      ],
+      "sha256": "da37829b71997e357826765d691cd4e60362195a0962ea6f9fdd599089161200",
+      "source": "30亮度2560x1600.png"
+    },
+    {
+      "name": "screenshot_2560_80",
+      "client": "screenshot_2560_80.png",
+      "expected": {
+        "heroes": [
+          "熊猫武士",
+          "浴血狂战",
+          "隐匿之刃"
+        ],
+        "schools": null
+      },
+      "note": "2560x1600 全屏截图，80亮度；3 英雄，含特权解锁/随机；流派识别失败且未人工复核，记 null",
+      "resolution": [
+        2560,
+        1600
+      ],
+      "sha256": "03b4395de4bf9dd57f07a6dfcb471f62526d3ea8cc6020776793315d97ba8d85",
+      "source": "80亮度2560x1600.png"
     }
   ]
 }

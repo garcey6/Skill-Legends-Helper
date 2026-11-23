@@ -138,7 +138,7 @@
   dev 依赖放 `requirements-dev.txt`（继承运行时依赖并精确锁版本），打包显式排除 pytest/tests。
 - **备选**：新建 `CaptureSource` 协议并让 `LiveSampler` 改签名；继续用直接数组测试；把 pytest 加进运行时依赖。
 - **后果**：输入层不产生第二套抽象，识别管线签名不变；fixtures 是真实图用例的唯一标签来源，
-  holdout 仍负责 6 例 CI 准确率。pytest 只是开发依赖，不进 `requirements.txt` 或发行包；代价是
+  holdout 仍负责 9 例 CI 准确率。pytest 只是开发依赖，不进 `requirements.txt` 或发行包；代价是
   `tests/fixtures` 仍需遵守图片体积/git 卫生规则，且 M3 必须在 fixtures 上增加跨分辨率用例。
 - **证据**：`app/live/sources.py`、`app/replay.py`、`tests/test_replay.py`、
   `requirements-dev.txt`、`tools/build_release.py`、`tests/fixtures/`。

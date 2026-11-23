@@ -1,5 +1,5 @@
 {
-  "description": "真实游戏窗口 holdout；每张图由 tools/import_validation.py 登记，英雄名使用正式名，流派未知可留 null。",
+  "description": "真实游戏窗口 holdout；每张图由 tests/fixtures 统一提供，expected_file 为唯一标签源；英雄正式名，流派未复核可留 null。",
   "cases": [
     {
       "name": "draft001_1800x1118",
@@ -27,79 +27,87 @@
     },
     {
       "name": "screenshot_1920_30",
-      "client": "screenshot_1920_30.png",
-      "expected": {
-        "heroes": [
-          "皇家骑士",
-          "长生梨妖",
-          "魔镜"
-        ],
-        "schools": null
-      },
-      "note": "1920x1080 全屏截图，30亮度；3 英雄，含特权解锁/随机；流派未人工复核，记 null",
+      "client": "../../../tests/fixtures/screenshots/screenshot_1920_30.png",
+      "expected_file": "../../../tests/fixtures/expected/screenshot_1920_30.json",
+      "note": "1920x1080 全屏截图，30亮度；3英雄，含特权解锁/随机；流派未人工复核，记 null",
       "resolution": [
         1920,
         1080
       ],
-      "sha256": "fc234ddbf6e53c81a85351391cfb908635e675f6769c03b1ffba217acbb4fb89",
+      "sha256": "b92736ee14d3e082050ded07ad7bd5ac9a2f5ed0144852a51343037f3f1ee3e3",
       "source": "30亮度1920x1080.png"
     },
     {
       "name": "screenshot_1920_80",
-      "client": "screenshot_1920_80.png",
-      "expected": {
-        "heroes": [
-          "霸者龙神",
-          "疾影剑卫",
-          "月隐猎手"
-        ],
-        "schools": null
-      },
-      "note": "1920x1080 全屏截图，80亮度；3 英雄，含特权解锁/随机；流派未人工复核，记 null",
+      "client": "../../../tests/fixtures/screenshots/screenshot_1920_80.png",
+      "expected_file": "../../../tests/fixtures/expected/screenshot_1920_80.json",
+      "note": "1920x1080 全屏截图，80亮度；3英雄，含特权解锁/随机；流派未人工复核，记 null",
       "resolution": [
         1920,
         1080
       ],
-      "sha256": "c08f5e07263f04bba261598e6ba5c70a33cfb4b9346d2dd191d34dd4f214c960",
+      "sha256": "6ea174a75969acf6957d7b1fddcf3ac24bc93650e7419e084ac60bf1da74b454",
       "source": "80亮度1920x1080.png"
     },
     {
       "name": "screenshot_2560_30",
-      "client": "screenshot_2560_30.png",
-      "expected": {
-        "heroes": [
-          "苍穹飓风",
-          "瘟疫术士",
-          "狂暴战将"
-        ],
-        "schools": null
-      },
-      "note": "2560x1600 全屏截图，30亮度；3 英雄，含特权解锁/随机；流派未人工复核，记 null",
+      "client": "../../../tests/fixtures/screenshots/screenshot_2560_30.png",
+      "expected_file": "../../../tests/fixtures/expected/screenshot_2560_30.json",
+      "note": "2560x1600 全屏截图，30亮度；3英雄，含特权解锁/随机；流派未人工复核，记 null",
       "resolution": [
         2560,
         1600
       ],
-      "sha256": "da37829b71997e357826765d691cd4e60362195a0962ea6f9fdd599089161200",
+      "sha256": "4d6e470fe05d2973393255b9f5aba732ac86dcc226a34f9b8ee23720a4b3eac0",
       "source": "30亮度2560x1600.png"
     },
     {
       "name": "screenshot_2560_80",
-      "client": "screenshot_2560_80.png",
-      "expected": {
-        "heroes": [
-          "熊猫武士",
-          "浴血狂战",
-          "隐匿之刃"
-        ],
-        "schools": null
-      },
-      "note": "2560x1600 全屏截图，80亮度；3 英雄，含特权解锁/随机；流派识别失败且未人工复核，记 null",
+      "client": "../../../tests/fixtures/screenshots/screenshot_2560_80.png",
+      "expected_file": "../../../tests/fixtures/expected/screenshot_2560_80.json",
+      "note": "2560x1600 全屏截图，80亮度；3英雄，含特权解锁/随机；流派识别失败，记 null",
       "resolution": [
         2560,
         1600
       ],
-      "sha256": "03b4395de4bf9dd57f07a6dfcb471f62526d3ea8cc6020776793315d97ba8d85",
+      "sha256": "f8f47c8d786caeafb19a8153bdb3294f11d0aeb462cb5ebf6be4872a4dd61d9f",
       "source": "80亮度2560x1600.png"
+    },
+    {
+      "name": "screenshot_2560x1390_a",
+      "client": "../../../tests/fixtures/screenshots/screenshot_2560x1390_a.png",
+      "expected_file": "../../../tests/fixtures/expected/screenshot_2560x1390_a.json",
+      "note": "2560x1390 全屏截图；4英雄+随机；流派由识别结果登记，置信度 high",
+      "resolution": [
+        2560,
+        1390
+      ],
+      "sha256": "78fbbdd9bd249b07c6f2d6b631cc10b1764f5aafba3a62375bfe5639563ac21f",
+      "source": "截图素材/screenshot_2560x1390_a.png"
+    },
+    {
+      "name": "screenshot_2560x1390_b",
+      "client": "../../../tests/fixtures/screenshots/screenshot_2560x1390_b.png",
+      "expected_file": "../../../tests/fixtures/expected/screenshot_2560x1390_b.json",
+      "note": "2560x1390 全屏截图；4英雄+随机；流派识别失败，记 null",
+      "resolution": [
+        2560,
+        1390
+      ],
+      "sha256": "51b70120ab2583ab18fa96573510caec2c9cff6003f6d0e27019affa8fde9dd8",
+      "source": "截图素材/screenshot_2560x1390_b.png"
+    },
+    {
+      "name": "screenshot_2560x1390_d",
+      "client": "../../../tests/fixtures/screenshots/screenshot_2560x1390_d.png",
+      "expected_file": "../../../tests/fixtures/expected/screenshot_2560x1390_d.json",
+      "note": "2560x1390 全屏截图；4英雄+随机；流派识别失败，记 null",
+      "resolution": [
+        2560,
+        1390
+      ],
+      "sha256": "b67448ddeba43d74fc6de30d3722efee56e8de825fa42b43e3f1a9fe81c6ce70",
+      "source": "截图素材/screenshot_2560x1390_d.png"
     }
   ]
 }

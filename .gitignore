@@ -12,6 +12,7 @@ data/server_url.txt
 data/overlay_position.json
 data/meta_stats.json
 accuracy.json
+holdout_accuracy.json
 dist/
 build/release/
 .buildtools/

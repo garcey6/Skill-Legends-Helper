@@ -20,7 +20,7 @@ from app.vision.pipeline import build_result, recognize_rois
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_LAYOUT = ROOT / "data" / "recognize" / "layout.json"
 FIXTURES_ROOT = ROOT / "tests" / "fixtures"
-FIXTURE_MINIMUM = 2
+FIXTURE_MINIMUM = 9
 FIXTURE_TARGET = 10
 
 
@@ -36,7 +36,7 @@ def load_assets(
     *,
     layout_path: Path = DEFAULT_LAYOUT,
     base_dir: Optional[Path] = None,
-    use_ocr: bool = False,
+    use_ocr: bool = True,
 ) -> Dict[str, Any]:
     layout = json.loads(Path(layout_path).read_text(encoding="utf-8"))
     advisor = Advisor()

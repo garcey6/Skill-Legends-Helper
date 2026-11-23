@@ -10,8 +10,9 @@
 - M1 静态回放：复用 `FrameSource` 增加 `CaptureSource` / `StaticFrameSource` 兼容别名，
   新增 `python -m app --replay <截图>` 和 `--generate-expected`，fixtures 自动发现并逐条断言
   英雄、流派与可选置信度下限。
-- 真实 fixture 契约：`tests/fixtures/screenshots/` + `tests/fixtures/expected/`；两条旧 holdout
-  用例已迁移，holdout 元数据只保留引用。fixture 阈值 2，目标 10，pytest 每次输出缺口。
+- 真实 fixture 契约：`tests/fixtures/screenshots/` + `tests/fixtures/expected/`；旧 holdout
+  用例和新增真实截图统一迁入，holdout 元数据只保留引用。fixture 阈值升到 9，目标 10，
+  pytest 每次输出 `9 / 目标 10，缺口 1`。
 
 ### 文档
 
@@ -25,15 +26,16 @@
 
 ### 测试
 
-- 新增 4 张真实截图（1920×1080 / 2560×1600，30/80 亮度，含“特权解锁/随机”），真实帧
-  holdout 从 2 组增至 6 组，CI holdout 门槛从 2 提到 6；4 张全屏素材只登记英雄，流派
-  未人工复核，统一记为 `null`。
+- 新增 4 张真实截图（1920×1080 / 2560×1600，30/80 亮度，含“特权解锁/随机”）和 3 张
+  2560×1390 四英雄截图（A/B/D），真实帧 holdout 从 2 组增至 9 组，CI holdout 门槛从 6
+  提到 8；全屏素材只登记已核对的字段，未逐图标复核的流派统一记为 `null`。C 组因字模
+  无法识别“极寒掌控者”未入库，留作失败样本。
 - 新增 `requirements-dev.txt`（继承运行时依赖，精确锁定 `pytest==9.2.0`）；CI 分两步安装
   运行时/开发依赖并改用 pytest；PyInstaller 显式排除 pytest 与测试目录。
 
 ### 计划中
 
-- 补到 10 组真实帧 holdout 后把 CI 门槛从 6 提到 8，再逐步扩到 50–100 组。
+- 补到 10 组真实帧 holdout（当前 9，差 1）后维持 CI 门槛 8，再逐步扩到 50–100 组。
 - 为 hd / fhd / qhd 重新采样独立模板，而不是共用 1800px 参考模板。
 - 代码签名、安装器与自动更新。
 

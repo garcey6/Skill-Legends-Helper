@@ -24,15 +24,15 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2
-python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 6
+python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8
 python -m app --replay tests/fixtures/screenshots/draft001_1800x1118.png
 python -m tools.live_recognize --replay samples/frames/draft_001
 ```
 
 如果本机没有 `python`，使用项目 `启动助手.bat` 里配置的 Python。
 pytest 会输出 fixture 数/目标 10/缺口；fixture 阈值只升不降。固定验证集用
-`--min-cases 2`，真实 holdout 当前用 `--min-cases 6`；都不是长期目标，样本增加后按
-[PLAN](PLAN.md) 阶梯提高，holdout 达到 10 组后提到 8。
+`--min-cases 2`，真实 holdout 当前 9 组、CI 门槛 8；都不是长期目标，样本增加后按
+[PLAN](PLAN.md) 阶梯提高，holdout 达到 10 组后门槛同步到 10 之前保持 8。
 
 ## 仓库内 AI 技能
 
@@ -81,7 +81,7 @@ python tools/validate_cases.py --strict
 ```
 
 涉及识别参数时再加 `python tools/run_accuracy.py --strict --min-cases 2`；涉及 holdout 时
-再加 `--meta samples/validation/holdout/meta.json --min-cases 6`。文档使用中文；用户可见文案也用中文，
+再加 `--meta samples/validation/holdout/meta.json --min-cases 8`。文档使用中文；用户可见文案也用中文，
 技术标识符保持英文。
 
 小改（修 bug、调阈值、补测试）至少更新 [DEVELOPMENT_LOG](DEVELOPMENT_LOG.md) 和

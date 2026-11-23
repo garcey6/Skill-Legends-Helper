@@ -2,9 +2,9 @@
 
 `tools/run_accuracy.py` 能算准确率，但只有两套固定验证图时，数字只能证明“这两张没坏”。本流程把真实截图持续纳入回归，目标是 10 组起步、逐步扩到 50–100 组。
 
-当前仓库有 **6 组**独立真实帧：1800×1118 无边框、2153×1179 窗口化，以及 4 张 1920×1080 / 2560×1600 的 30/80 亮度截图（全屏，含标题栏，属于压力样本）。因此 CI 的 holdout 门槛暂时是 `--min-cases 6`；补到 10 组后再把门槛提到 8。不要为了凑数提交同屏连拍或合成图。
+当前仓库有 **9 组**独立真实帧：1800×1118 无边框、2153×1179 窗口化，4 张 1920×1080 / 2560×1600 的 30/80 亮度截图，以及 3 张 2560×1390 四英雄截图（A/B/D）。图片统一放在 `tests/fixtures/screenshots/`，holdout 只保留 `client` / `expected_file` 引用。CI 的 holdout 门槛为 `--min-cases 8`（9 组留 1 组余量；达到 10 组后余量 2）。不要为了凑数提交同屏连拍或合成图。
 
-这 4 张全屏素材只人工核对了英雄名，流派没有逐图标复核，因此流派统一记为 `null`；其中 `screenshot_2560_80` 的流派分段本身也失败（`run_count 13`）。它们只作为英雄识别回归，不是流派回归通过的证据。
+4 张旧全屏素材只人工核对了英雄名，流派没有逐图标复核，因此流派统一记为 `null`；其中 `screenshot_2560_80` 的流派分段本身也失败（`run_count 13`）。新 A 组有已核对的 8 启用 / 5 禁用流派；B/D 只登记英雄名，流派为 `null`。它们只作为英雄识别回归，不是流派回归通过的证据。C 组（`极寒掌控者 / 狂暴战将 / 星涡语者 / 赏金猎人`）因字模无法识别“极寒掌控者”而未入库，只作为已知失败样本，不得用合成标签或改模板来“凑绿”。
 
 ## 1. 采一帧
 
@@ -38,7 +38,7 @@ python -X utf8 tools/import_validation.py `
 ```powershell
 python tools/run_accuracy.py `
   --meta samples/validation/holdout/meta.json `
-  --min-cases 6 `
+  --min-cases 8 `
   --strict `
   --out holdout_accuracy.json
 ```
@@ -51,7 +51,7 @@ python tools/run_accuracy.py `
 - `p50_ms` / `p95_ms`：离线识别耗时；不是游戏内端到端延迟；
 - `failures`：逐案例期望/实际，便于定位。
 
-`--min-cases` 是防回退门槛：实际案例少于门槛时 `--strict` 必须失败。CI 已经跑这条命令，当前门槛为 6；每补一批独立真实帧就往上提一档，达到 10 组后提到 8。
+`--min-cases` 是防回退门槛：实际案例少于门槛时 `--strict` 必须失败。CI 已经跑这条命令，当前门槛为 8；每补一批独立真实帧就往上提一档，达到 10 组后维持 8（余量 2），再按阶梯向 25/20 提高。
 
 ## 4. 扩到 10 组（再扩到 50–100）
 
@@ -71,10 +71,10 @@ python tools/run_accuracy.py `
 ## 5. 与固定样例的关系
 
 - `samples/validation/meta.json`：两套固定样例，CI 每次都跑，防止基础能力回退。
-- `samples/validation/holdout/meta.json`：真实分布，当前 6 组，已接入 CI；样本增加后提高 `--min-cases`。
-- `tests/fixtures/`：M1 静态回放的唯一真实图用例源。fixtures 里的 2 组（1800×1118、
-  2153×1179）就是从 holdout 迁入的；holdout 只保留 `client` / `expected_file` 引用，
-  不再维护第二套标签。pytest 自动发现 fixtures 并打印 `N / 目标 10，缺口 N`。
+- `samples/validation/holdout/meta.json`：真实分布，当前 9 组，已接入 CI；样本增加后提高 `--min-cases`。
+- `tests/fixtures/`：M1 静态回放的唯一真实图用例源。当前 9 组（2 张草稿 + 4 张旧全屏 + A/B/D），
+  holdout 只保留 `client` / `expected_file` 引用，不再维护第二套标签。pytest 自动发现 fixtures
+  并打印 `N / 目标 10，缺口 N`；当前为 `9 / 目标 10，缺口 1`。
 
 三条路径都用同一套识别管线；改识别参数时至少跑 pytest + 固定验证集，涉及真实分布时再跑 holdout。
 模板分组（hd/fhd/qhd）目前共享同一套 1800px 参考模板，选择逻辑已接入运行时，但尚未按分辨率

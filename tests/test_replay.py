@@ -15,17 +15,20 @@ from app.live.sources import CaptureSource, StaticFrameSource
 
 # 此阈值随 fixtures 增长同步上调，禁止下调。
 # M1 起点是两条已迁移的真实 holdout 用例；PLAN 阶段一目标是 10 条。
-FIXTURE_MINIMUM = 2
+# 2026-11-23 补入 7 条真实截图，达到 9 条；“极寒掌控者”那张暂不入库。
+FIXTURE_MINIMUM = 9
 FIXTURE_TARGET = 10
 
 
 class FixtureDiscoveryTest(unittest.TestCase):
-    def test_discovers_the_two_migrated_holdout_cases(self) -> None:
+    def test_discovers_migrated_and_new_screenshot_cases(self) -> None:
         from app.replay import discover_cases
 
         names = {case.name for case in discover_cases()}
         self.assertIn("draft001_1800x1118", names)
         self.assertIn("draft002_2153x1179", names)
+        self.assertIn("screenshot_1920_30", names)
+        self.assertIn("screenshot_2560x1390_a", names)
 
     def test_fixture_count_meets_the_rising_floor(self) -> None:
         from app.replay import discover_cases

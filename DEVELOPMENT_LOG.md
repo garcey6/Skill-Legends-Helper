@@ -43,7 +43,7 @@
 - **证据**：`tools/import_validation.py` 的 `image_digest` / `_existing_digest` /
   `_same_labels`；`tests/test_validation_import.py` 的重复内容、同尺寸同标签用例；
   `.github/workflows/ci.yml` 的 holdout 步骤。
-- **状态**：防重复已完成；真实样本 6 组（新增 4 张 1080p/1600p 全屏截图），10 组门槛未达成。
+- **状态**：防重复已完成；真实样本 9 组（新增 4 张 1080p/1600p 全屏截图和 3 张 2560×1390 四英雄截图），10 组门槛未达成；C 组因字模无法识别“极寒掌控者”未入库。
 
 ## 2026-11-19 三个模板组指向同一套 1800px 模板
 
@@ -119,7 +119,7 @@
 - **证据**：`app/live/sources.py`、`app/replay.py`、`app/__main__.py`、
   `tests/fixtures/`、`tests/test_replay.py`、`tests/conftest.py`、`requirements-dev.txt`、
   `tools/build_release.py`。
-- **状态**：已实现；fixture 2/10，缺口 8，阈值只升不降。
+- **状态**：已实现；fixture 9/10，缺口 1，阈值只升不降；9 组 holdout 已接入 CI，门槛 8。
 
 ## 2026-11-21 “未核验”不是免责声明
 

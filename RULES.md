@@ -28,13 +28,13 @@
 python -m pytest -q
 python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2
-python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 6
+python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8
 ```
 
 5. 涉及浮窗或截图路径时，再做一次手工启动验证；只跑单测不算验证显示链路。
 
 准确率/耗时结论必须绑定样本量、来源目录和运行环境。`n < 10` 的结论不得写成“达标依据”；
-当前 holdout 只有 6 组，只能说明这六张图没坏。
+当前 holdout 有 9 组，只能说明这九张图没坏；第 10 组补齐前仍不得宣称达到目标。
 
 ## 3. 状态记录：禁止推断“通过”
 

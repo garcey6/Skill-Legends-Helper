@@ -66,7 +66,7 @@ class CurrentValidationCasesTest(unittest.TestCase):
 
         meta = Path(__file__).resolve().parent.parent / "samples" / "validation" / "holdout" / "meta.json"
         report = evaluate_validation(meta)
-        self.assertEqual(report["metrics"]["cases"], 6)
+        self.assertEqual(report["metrics"]["cases"], 9)
         self.assertTrue(all(case["expected"] for case in report["cases"]))
         self.assertEqual(report["metrics"]["failures"], [])
 

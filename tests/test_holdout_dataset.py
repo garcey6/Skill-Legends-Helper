@@ -27,8 +27,8 @@ class HoldoutDatasetTest(unittest.TestCase):
         self.data = json.loads(META.read_text(encoding="utf-8"))
         self.cases = self.data.get("cases") or []
 
-    def test_has_at_least_six_independent_cases(self) -> None:
-        self.assertGreaterEqual(len(self.cases), 6)
+    def test_has_at_least_nine_independent_cases(self) -> None:
+        self.assertGreaterEqual(len(self.cases), 9)
 
     def test_every_case_has_a_real_image_and_labels(self) -> None:
         for case in self.cases:
@@ -44,11 +44,9 @@ class HoldoutDatasetTest(unittest.TestCase):
                     self.assertEqual(list(image.size), list(case.get("resolution") or []))
                 self.assertEqual(len(str(case.get("sha256") or "")), 64)
 
-    def test_migrated_cases_use_fixture_expected_files(self) -> None:
-        by_name = {case.get("name"): case for case in self.cases}
-        for name in ("draft001_1800x1118", "draft002_2153x1179"):
-            with self.subTest(case=name):
-                case = by_name[name]
+    def test_all_cases_use_fixture_expected_files(self) -> None:
+        for case in self.cases:
+            with self.subTest(case=case.get("name")):
                 self.assertIsNone(case.get("expected"))
                 expected_file = case.get("expected_file")
                 self.assertTrue(expected_file)
@@ -62,11 +60,19 @@ class HoldoutDatasetTest(unittest.TestCase):
         labels = []
         for case in self.cases:
             expected = case_expected(case)
+            schools = expected.get("schools")
+            if isinstance(schools, dict):
+                school_key = (
+                    tuple(schools.get("enabled") or []),
+                    tuple(schools.get("banned") or []),
+                )
+            else:
+                school_key = tuple(schools or [])
             labels.append(
                 (
                     tuple(case.get("resolution") or []),
                     tuple(expected.get("heroes") or []),
-                    tuple(expected.get("schools") or []),
+                    school_key,
                 )
             )
         self.assertEqual(len(labels), len(set(labels)), "duplicate resolution+labels in holdout")

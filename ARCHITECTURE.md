@@ -32,12 +32,14 @@ agent.py
 ├─ app.overlay.capture        Win32 截图、窗口查找、DPI、悬浮窗样式
 ├─ app.overlay.hotkey         全局热键
 ├─ app.overlay.hud            Pillow 卡片渲染 + Tk 窗口 + 滚动视口
+├─ app.overlay.debug          调试浮层 / 标注 PNG（按需构建，关闭时不做采集/绘制）
 ├─ app.live.win32src          ROI-only GDI 抓帧
 ├─ app.live.sources           M1 兼容别名：CaptureSource / StaticFrameSource（无业务逻辑）
 ├─ app.live.sampler           采集线程 + 识别线程 + 去重
 ├─ app.replay                 M1 单图回放、fixtures 发现、草稿期望生成
 ├─ app.vision.assets          TemplateGroup / AssetBundle / AssetCache
 ├─ app.vision.pipeline        ROI -> 识别 Result
+├─ app.vision.debugframe      调试帧（ROI/OCR/模板/耗时/失败原因）
 ├─ app.vision.ocr             RapidOCR 名牌检测/识别/闭集校正
 ├─ app.vision.glyphs          字模兜底
 ├─ app.vision.schools         色度流派匹配 + 白色符文决胜
@@ -97,6 +99,27 @@ fixture 契约：`tests/fixtures/expected/<stem>.json` 与
 `tests/test_replay.py` 自动发现并逐条跑真实图。两条旧 holdout 的图片和标签已迁入 fixtures；
 `samples/validation/holdout/meta.json` 只保留 `client` / `expected_file` 引用，避免两套标签源。
 pytest 是 dev-only 依赖，绝不进入运行时或发行包；真实验证图仍受体积/git 卫生约束。
+
+### 4.2 调试浮层（M2）
+
+调试默认关闭。关闭时 `Agent._maybe_debug` 在构建任何对象前返回，不构建帧、不截图、不创建 Tk
+窗口；识别线程与主浮窗路径没有额外工作。`app.overlay.debug` 与识别同用 Pillow/Tkinter，
+不引入新依赖。调试开启时主浮窗让位给调试浮层，关闭调试后恢复。
+
+开启方式：启动参数 `--debug`，或运行时按 `Alt+D`（被占用时自动换键）。开启后每次接受一条
+识别结果，`build_debug_frame` 生成只读的 `DebugFrame`：
+
+- `rois`：图标条 / 英雄名牌的客户区矩形；
+- `ocr`：名牌框、识别名、分数（无 OCR 引擎时来源为 `glyph`）；
+- `templates`：底部流派图标 run、标签与匹配 margin；
+- `timings_ms`、`failure_reason`（流派失败或槽位未识别）。
+
+`DebugOverlay` 用 `Toplevel` + `overrideredirect` + 置顶 Canvas 显示，按 `1/2/3` 切换
+ROI/OCR/模板层，`A` 全开，`S` 保存标注 PNG，`Esc` 关闭；窗口位置保存在
+`%APPDATA%\SkillLegendsHelper\debug_overlay.json`，标注 PNG 在
+`%APPDATA%\SkillLegendsHelper\debug\`。大图按屏幕 90%×85% 缩放显示，保存的 PNG 仍是原图尺寸。
+浮层与 PNG 共用 `render_debug_image`，不存在第二套绘制逻辑。调试开启时会临时隐藏主浮窗，
+关闭后恢复最近一次分析卡片。
 
 ## 5. 数据与资产契约
 

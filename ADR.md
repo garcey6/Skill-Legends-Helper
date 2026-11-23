@@ -76,7 +76,7 @@
   holdout、打包。Release 工作流由 `v*` 标签触发。
 - **备选**：Ubuntu + mock Win32；只在本地跑测试。
 - **后果**：CI 成本更高、启动更慢，但能覆盖真实平台。没有 RapidOCR 的本地环境会跳过部分
-  OCR 用例；文档必须写成“132 通过、3 跳过”这类当场核验的数字，不得沿用旧值。
+  OCR 用例；文档必须写成“144 通过、3 跳过”这类当场核验的数字，不得沿用旧值。
 - **证据**：`.github/workflows/ci.yml`；`.github/workflows/release.yml`。
 
 ## ADR-006 用户预设的存储形态（待决）
@@ -143,6 +143,23 @@
 - **证据**：`app/live/sources.py`、`app/replay.py`、`tests/test_replay.py`、
   `requirements-dev.txt`、`tools/build_release.py`、`tests/fixtures/`。
 
+## ADR-010 M2 调试浮层使用 Tkinter + 只读 DebugFrame
+
+- **日期**：2026-11-23
+- **状态**：已接受
+- **背景**：需要在不改 `recognize_rois` 签名、不引入第二套 UI 框架的前提下显示 ROI、OCR 框、
+  模板框、置信度和耗时；普通识别路径不能为调试付出采集或绘制成本。
+- **决策**：`app/vision/debugframe.py` 只从既有识别结果构建 `DebugFrame`；`app/overlay/debug.py`
+  用 Tkinter `Toplevel` + Canvas 显示，并用同一个 `render_debug_image` 生成 PNG。管线只增加
+  附加字段 `plate_boxes`，不新增调试参数；Agent 在 `_maybe_debug` 第一行检查开关，关闭时不做
+  截图、不构建帧、不碰 Tk。位置与 PNG 写 `%APPDATA%/SkillLegendsHelper/`。
+- **备选**：改 `recognize_rois` 返回调试对象；新建 PyQt/WebView 调试窗口；调试时在 HUD 内叠加。
+- **后果**：运行时依赖不增加；调试与正常路径共用同一份识别结果，避免“浮层显示的是另一套结果”。
+  代价是 OCR 候选本身没有框，调试帧只能在名牌 ROI 上做近似/检测框补充，框位置精度受当前
+  ROI 实现限制。
+- **证据**：`app/vision/debugframe.py`、`app/overlay/debug.py`、`tests/test_debug_overlay.py`、
+  `tests/test_agent_debug.py`、`agent.py`。
+
 ## 决策索引
 
 | 编号 | 主题 | 状态 |
@@ -156,3 +173,4 @@
 | ADR-007 | 卡牌清单来源 | 待决 |
 | ADR-008 | 字段级合并语义 | 待决 |
 | ADR-009 | M1 回放复用 FrameSource / fixtures 唯一来源 | 已接受 |
+| ADR-010 | M2 调试浮层：Tkinter + 只读 DebugFrame | 已接受 |

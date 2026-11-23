@@ -114,6 +114,14 @@ class LiveRecognitionTest(unittest.TestCase):
         self.assertEqual(rec["schools"]["status"], "failed")
         self.assertIsNone(rec["schools"]["banned"])
 
+    def test_glyph_fallback_reports_plate_boxes_for_debug(self) -> None:
+        rec = self._recognize(ROOT / "samples" / "draft_001.png")
+        boxes = rec["plate_boxes"]
+        self.assertGreaterEqual(len(boxes), 3)
+        for x0, y0, x1, y1 in boxes:
+            self.assertLess(x0, x1)
+            self.assertLess(y0, y1)
+
     def test_median_and_stability(self) -> None:
         a = np.zeros((20, 20, 3), dtype=np.uint8)
         b = a + 100

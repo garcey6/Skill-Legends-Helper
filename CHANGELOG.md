@@ -10,6 +10,9 @@
 - M1 静态回放：复用 `FrameSource` 增加 `CaptureSource` / `StaticFrameSource` 兼容别名，
   新增 `python -m app --replay <截图>` 和 `--generate-expected`，fixtures 自动发现并逐条断言
   英雄、流派与可选置信度下限。
+- M2 调试浮层：`Alt+D`（可配置）按需显示 ROI、OCR 名牌框、模板框/分数与失败原因；
+  Tkinter 置顶浮层支持拖动、`1/2/3` 分层、`A` 全开、`S` 保存标注 PNG，位置与 PNG 写入
+  `%APPDATA%\SkillLegendsHelper\`；调试关闭时不增加识别开销。
 - 真实 fixture 契约：`tests/fixtures/screenshots/` + `tests/fixtures/expected/`；旧 holdout
   用例和新增真实截图统一迁入，holdout 元数据只保留引用。fixture 阈值升到 9，目标 10，
   pytest 每次输出 `9 / 目标 10，缺口 1`。

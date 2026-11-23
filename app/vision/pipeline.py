@@ -65,8 +65,15 @@ def recognize_rois(
 
     started_hero = time.perf_counter()
     boxes: List[Any] = []
+    plate_boxes: List[Tuple[int, int, int, int]] = []
     if ocr_matcher is not None:
         heroes = ocr_matcher.match(nameplates, client_w, glyph_matcher)
+        detect = getattr(ocr_matcher, "detect_plates", None)
+        if callable(detect):
+            try:
+                plate_boxes = [tuple(int(round(v)) for v in box) for box in detect(nameplates, client_w)]
+            except Exception:
+                plate_boxes = []
     else:
         boxes = segment_glyphs(
             nameplates,
@@ -82,6 +89,17 @@ def recognize_rois(
             max_names=5,
         )
         heroes = glyph_matcher.match(nameplates, groups)
+        for group in groups:
+            if not group:
+                continue
+            plate_boxes.append(
+                (
+                    min(int(b[0]) for b in group),
+                    min(int(b[1]) for b in group),
+                    max(int(b[2]) for b in group),
+                    max(int(b[3]) for b in group),
+                )
+            )
     hero_ms = (time.perf_counter() - started_hero) * 1000.0
 
     warnings: List[str] = []
@@ -105,6 +123,7 @@ def recognize_rois(
         },
         "runs": runs,
         "glyph_boxes": boxes,
+        "plate_boxes": plate_boxes,
     }
 
 

@@ -8,7 +8,7 @@
 | 项目 | 当前值 | 说明 |
 | --- | --- | --- |
 | 主线版本 | `v0.2.3` | 已发布 GitHub Release |
-| 测试 | 132 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
+| 测试 | 144 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
 | 固定验证集 | 2 例 | `samples/validation/meta.json` |
 | fixture 回放 | 9 例 | `tests/fixtures/`；目标 10，差 1 |
 | 真实帧 holdout | 9 组 | `samples/validation/holdout/meta.json`；C 因字模无法识别未入库 |
@@ -28,9 +28,10 @@
 - [x] M1 静态回放：复用 `FrameSource`，新增 `python -m app --replay`、fixtures 自动发现和
       草稿期望生成；至少 1 条真实图通过。
 - [x] 两条旧 holdout 用例迁入 `tests/fixtures/`，holdout 只保留引用，不维护第二套标签。
-- [ ] 真实帧从 6 组补到 10 组（当前 9 组，差 1；C 的 `极寒掌控者` 字模无法识别，
-      未为了凑数入库），覆盖 1080p / 2K / 4K、无边框 / 窗口化、1–5 英雄、
-      含“特权解锁 / 随机”的界面。
+- [x] M2 调试浮层：按需构建 `DebugFrame`（ROI、OCR、模板框、耗时、失败原因），
+      Tkinter 置顶浮层可拖动、切换图层并保存标注 PNG；关闭时识别路径零额外开销。
+- [ ] 真实帧从 9 组补到 10 组（C 的 `极寒掌控者` 字模无法识别，未为了凑数入库），
+      覆盖 1080p / 2K / 4K、无边框 / 窗口化、1–5 英雄、含“特权解锁 / 随机”的界面。
 - [x] 每组独立画面，禁止同屏连拍、重复帧、合成图充数；导入器按解码后 SHA-256 和
       尺寸+标签双重拒重。
 - [x] holdout 达到 8 组以上后，把 CI 的 `--min-cases` 从 6 提到 8；9 组时留 1 组余量，

@@ -105,6 +105,20 @@
   numpy/Pillow/rapidocr。
 - **状态**：已修复。
 
+## 2026-11-23 M2 调试浮层的坐标空间与大图适配
+
+- **现象**：第一版调试预览把底部模板框画到了屏幕左上方，OCR 框整体偏高；直接打开 2560×1390
+  截图时浮层比 1080p 屏幕还大，底部被裁掉。
+- **根因**：`runs` / `plate_boxes` / `glyph_boxes` 都是相对各自 ROI 的局部坐标，绘制层当成了
+  客户区绝对坐标；`DebugOverlay` 直接使用原图，没有按屏幕工作区缩放。
+- **正确做法**：`build_debug_frame` 分别加上图标条/名牌 ROI 的左上偏移；`DebugOverlay` 用
+  `fit_debug_image` 缩放到屏幕 90%×85%，而保存 PNG 仍用原图。坐标空间必须有测试断言，
+  不能只看“有没有框”。调试模式独占屏幕，主浮窗让位；Esc/关闭必须通过回调恢复 HUD，
+  否则用户会只剩一张无法操作的调试图。
+- **证据**：`app/vision/debugframe.py`、`app/overlay/debug.py`、
+  `tests/test_debug_overlay.py`；本机 GUI 冒烟（临时截图已清理）。
+- **状态**：已修复；M2 调试浮层可用。
+
 ## 2026-11-23 M1 回放复用输入层，pytest 只作开发依赖
 
 - **现象**：已有 `FrameSource`/`ImageFrameSource`，但真实图回归没有统一入口；测试直接喂数组，

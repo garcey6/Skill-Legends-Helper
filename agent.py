@@ -32,8 +32,10 @@ from app.kb.recommend import Advisor  # noqa: E402
 from app.live.sampler import LiveSampler  # noqa: E402
 from app.live.win32src import WindowFrameSource  # noqa: E402
 from app.overlay.hotkey import MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, MOD_WIN, HotkeyManager, parse_combo  # noqa: E402
+from app.overlay.debug import DebugOverlay  # noqa: E402
 from app.overlay.hud import Hud, render_error, render_loading, render_result  # noqa: E402
 from app.vision.assets import AssetCache, reference_width  # noqa: E402
+from app.vision.debugframe import build_debug_frame  # noqa: E402
 from app.vision.recognizer import Recognizer  # noqa: E402
 
 CAPTURE_DIR = BASE_DIR / "data" / "captures"
@@ -99,15 +101,17 @@ def choose_hotkeys(args) -> Dict[str, str]:
         "capture": args.capture_key,
         "toggle": args.toggle_key,
         "quit": args.quit_key,
+        "debug": getattr(args, "debug_key", "Alt+D"),
     }
     alternatives = {
         "capture": ["F6", "F10", "Ctrl+Shift+F8"],
         "toggle": ["F7", "F11", "Ctrl+Shift+F9"],
         "quit": ["Ctrl+Shift+Q", "Ctrl+Alt+W", "Ctrl+Shift+X"],
+        "debug": ["Alt+Shift+D", "Ctrl+Alt+D", "Ctrl+Shift+D"],
     }
     chosen: Dict[str, str] = {}
     used = set()
-    for action in ("capture", "toggle", "quit"):
+    for action in ("capture", "toggle", "quit", "debug"):
         for combo in [preferred[action]] + alternatives[action]:
             try:
                 mods, vk = parse_combo(combo)
@@ -137,6 +141,12 @@ class Agent:
         self.capture_key = self.hotkeys_cfg["capture"]
         self.toggle_key = self.hotkeys_cfg["toggle"]
         self.quit_key = self.hotkeys_cfg["quit"]
+        self.debug_key = self.hotkeys_cfg.get("debug", "Alt+D")
+        self.debug_enabled = bool(getattr(args, "debug", False))
+        self.debug_overlay: Optional[DebugOverlay] = None
+        self._debug_closing_from_toggle = False
+        self._last_debug_result: Optional[Dict[str, Any]] = None
+        self._last_debug_at = 0.0
         self.hud = Hud(
             alpha=args.alpha,
             scale=(args.hud_scale or None),
@@ -167,11 +177,13 @@ class Agent:
             capture=self.capture_key,
             toggle=self.toggle_key,
             quit_combo=self.quit_key,
+            debug=self.debug_key,
         )
         self.watchers = {
             "capture": KeyWatcher(self.capture_key),
             "toggle": KeyWatcher(self.toggle_key),
             "quit": KeyWatcher(self.quit_key),
+            "debug": KeyWatcher(self.debug_key),
         }
         self._last_dispatch: Dict[str, float] = {}
         self.server_url = "http://127.0.0.1:%d" % args.port
@@ -288,9 +300,16 @@ class Agent:
             print("热键提示：%s" % error, flush=True)
         print("=" * 58, flush=True)
         print(" 选技大乱斗 · 浮窗助手", flush=True)
-        print(" %s 识别    %s 显示/隐藏    %s 退出" % (self.capture_key, self.toggle_key, self.quit_key), flush=True)
-        requested = (self.args.capture_key, self.args.toggle_key, self.args.quit_key)
-        actual = (self.capture_key, self.toggle_key, self.quit_key)
+        print(" %s 识别    %s 显示/隐藏    %s 退出    %s 调试浮层" % (
+            self.capture_key, self.toggle_key, self.quit_key, self.debug_key
+        ), flush=True)
+        requested = (
+            self.args.capture_key,
+            self.args.toggle_key,
+            self.args.quit_key,
+            getattr(self.args, "debug_key", "Alt+D"),
+        )
+        actual = (self.capture_key, self.toggle_key, self.quit_key, self.debug_key)
         if requested != actual:
             print(" （%s 被其他程序占用，已自动换键；可在 bat 里改回）" % ", ".join(requested), flush=True)
         print(" 浮窗常驻，可按住卡片任意位置拖动；%s 负责隐藏。" % self.toggle_key, flush=True)
@@ -334,7 +353,109 @@ class Agent:
         if self.running:
             self.hud.root.after(50, self.poll)
 
+    def _capture_debug_image(self):
+        hwnd = getattr(self.live_source, "hwnd", None) or self.last_game_hwnd
+        if not hwnd:
+            return None
+        try:
+            return capture.capture(hwnd).image
+        except Exception:
+            try:
+                return capture.capture_screen(capture.client_box(hwnd))
+            except Exception:
+                return None
+
+    def _maybe_debug(self, result: Optional[Dict[str, Any]]) -> None:
+        # This is the only call site.  The disabled path returns before any
+        # frame construction, screenshot grab or Tk work.
+        if not getattr(self, "debug_enabled", False):
+            return
+        if not result:
+            return
+        now = time.monotonic()
+        if now - self._last_debug_at < 1.0:
+            return
+        self._last_debug_at = now
+        self._last_debug_result = result
+        if self.hud.visible:
+            self.hud.hide()
+        if self.debug_overlay is not None:
+            self.debug_overlay.suspend()
+        image = self._capture_debug_image()
+        if image is None:
+            if self.debug_overlay is not None:
+                self.debug_overlay.resume()
+            return
+        frame = build_debug_frame(result, self.live_layout, image.size)
+        try:
+            if self.debug_overlay is None:
+                self.debug_overlay = DebugOverlay(
+                    self.hud.root,
+                    image,
+                    frame,
+                    on_close=self._on_debug_closed,
+                )
+            else:
+                self.debug_overlay.update(image, frame)
+                self.debug_overlay.resume()
+            print(
+                "[debug] %dx%d roi=%d ocr=%d templates=%d %s"
+                % (
+                    image.width,
+                    image.height,
+                    len(frame.rois),
+                    len(frame.ocr),
+                    len(frame.templates),
+                    frame.failure_reason or "ok",
+                ),
+                flush=True,
+            )
+        except Exception as exc:
+            print("[debug] 浮层打开失败：%s" % exc, flush=True)
+            if self.debug_overlay is not None:
+                try:
+                    self.debug_overlay.close()
+                except Exception:
+                    pass
+                self.debug_overlay = None
+
+    def _restore_hud_after_debug(self) -> None:
+        if self.hud.last_source is not None:
+            self.hud.show(self.hud.last_source, self.last_game_hwnd)
+        else:
+            self.hud.show_ready(self.server_url)
+
+    def _on_debug_closed(self) -> None:
+        self.debug_overlay = None
+        self.debug_enabled = False
+        if not getattr(self, "_debug_closing_from_toggle", False) and getattr(self, "running", True):
+            self._restore_hud_after_debug()
+
+    def _toggle_debug(self) -> None:
+        self.debug_enabled = not self.debug_enabled
+        if self.debug_enabled:
+            print("调试浮层已开启：%s 关闭，1/2/3 切换层，S 保存" % self.debug_key, flush=True)
+            if self.hud.visible:
+                self.hud.hide()
+            if self._last_debug_result is not None:
+                self._last_debug_at = 0.0
+                self._maybe_debug(self._last_debug_result)
+            return
+        print("调试浮层已关闭", flush=True)
+        if self.debug_overlay is not None:
+            self._debug_closing_from_toggle = True
+            try:
+                self.debug_overlay.close()
+            finally:
+                self._debug_closing_from_toggle = False
+            self.debug_overlay = None
+        self._restore_hud_after_debug()
+
     def _handle_live(self, state: str, result: Optional[Dict[str, Any]]) -> None:
+        self._maybe_debug(result)
+        if getattr(self, "debug_enabled", False):
+            # Debug mode owns the screen; the HUD is restored when it is closed.
+            return
         now = time.monotonic()
         if state == "READY":
             self._live_ready_since = None
@@ -405,6 +526,8 @@ class Agent:
                 self.capture_and_show()
         elif action == "toggle":
             self.hud.toggle(self.last_game_hwnd)
+        elif action == "debug":
+            self._toggle_debug()
         elif action == "quit":
             self.quit()
 
@@ -522,6 +645,12 @@ class Agent:
                 self.httpd.shutdown()
             except Exception:
                 pass
+        if self.debug_overlay is not None:
+            try:
+                self.debug_overlay.close()
+            except Exception:
+                pass
+            self.debug_overlay = None
         try:
             self.hud.close()
         except Exception:
@@ -541,6 +670,8 @@ def main(argv=None) -> int:
     parser.add_argument("--capture-key", default="Alt+C", help="识别快捷键，默认 Alt+C")
     parser.add_argument("--toggle-key", default="Alt+X", help="显示/隐藏快捷键，默认 Alt+X")
     parser.add_argument("--quit-key", default="Ctrl+Alt+Q", help="退出快捷键，默认 Ctrl+Alt+Q")
+    parser.add_argument("--debug-key", default="Alt+D", help="调试浮层快捷键，默认 Alt+D")
+    parser.add_argument("--debug", action="store_true", help="启动时开启调试浮层")
     parser.add_argument("--port", type=int, default=8777, help="网页控制台端口，默认 8777")
     parser.add_argument("--alpha", type=float, default=0.97, help="浮窗不透明度")
     parser.add_argument("--hud-scale", type=float, default=0.0, help="浮窗缩放；0 表示按屏幕宽度自动")

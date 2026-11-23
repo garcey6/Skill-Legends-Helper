@@ -84,7 +84,7 @@ def parse_combo(name: str) -> Tuple[int, int]:
 
 
 class HotkeyManager:
-    """Register three global hotkeys and publish names on a queue."""
+    """Register global hotkeys (capture/toggle/quit, optional debug)."""
 
     def __init__(
         self,
@@ -92,13 +92,15 @@ class HotkeyManager:
         capture: str = "F8",
         toggle: str = "F9",
         quit_combo: str = "Ctrl+Alt+Q",
+        debug: Optional[str] = None,
     ) -> None:
         self.events = events
         self.bindings: Dict[int, Tuple[int, int, str]] = {}
         self.errors: List[str] = []
-        for ident, (combo, action) in enumerate(
-            ((capture, "capture"), (toggle, "toggle"), (quit_combo, "quit")), start=1
-        ):
+        bindings = [(capture, "capture"), (toggle, "toggle"), (quit_combo, "quit")]
+        if debug:
+            bindings.append((debug, "debug"))
+        for ident, (combo, action) in enumerate(bindings, start=1):
             try:
                 mods, vk = parse_combo(combo)
                 self.bindings[ident] = (mods, vk, action)

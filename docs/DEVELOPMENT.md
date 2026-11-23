@@ -14,6 +14,9 @@ python run.py
 # 浮窗模式
 python agent.py
 
+# 浮窗 + 调试浮层（也可运行时按 Alt+D 开关）
+python agent.py --debug
+
 # 不启动网页控制台
 python agent.py --no-server
 
@@ -49,7 +52,7 @@ python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --stric
 ```
 
 pytest 每次尾部打印 `holdout 用例数：N / 目标 10，缺口 N`；fixture 阈值只升不降。
-当前 pytest **132 项通过、3 项按环境跳过**（未装 RapidOCR 时）；安装 OCR 后条件用例会变化。
+当前 pytest **144 项通过、3 项按环境跳过**（未装 RapidOCR 时）；安装 OCR 后条件用例会变化。
 fixtures 的图片与期望标签在 `tests/fixtures/`，现有 9 组；holdout 只保留引用，避免两套标签源。
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
@@ -61,7 +64,8 @@ fixtures 的图片与期望标签在 `tests/fixtures/`，现有 9 组；holdout 
 - 推荐排序、证据归属、核心被 ban 后分数下降、未知英雄兜底；
 - 核心卡选择、立绘/技能图标完整性；
 - API keep-alive、`/api/overlay/capture` 触发、图鉴 API、素材自检；
-- 浮窗状态渲染、快捷键解析，包括 `Alt+C / Alt+X`；
+- 浮窗状态渲染、快捷键解析，包括 `Alt+C / Alt+X / Alt+D`；
+- 调试浮层：DebugFrame 内容、ROI/OCR/模板框坐标空间、失败原因、标注 PNG、用户目录、按需开关；
 - 验证集准确率回归：槽位/英雄名准确率、P50/P95 延迟、失败明细；
 - 真实帧导入：别名归一、未知/重复标签拒绝、同帧/同标签重复拒绝、原子写入、`--min-cases` 门槛；
 - 真实帧 holdout：9 组独立画面（1800×1118 无边框、2153×1179 窗口化、4 张 1080p/1600p 全屏压力样本、3 张 2560×1390 四英雄截图）的识别与 CI 门槛；C 组因字模无法识别“极寒掌控者”未入库；
@@ -95,6 +99,7 @@ CI 对固定验证集跑 `--min-cases 2`、对真实 holdout 跑 `--min-cases 8`
 │  ├─ overlay/
 │  │  ├─ capture.py          # Win32 截图、窗口查找、DPI、悬浮窗样式
 │  │  ├─ hotkey.py           # RegisterHotKey 消息循环
+│  │  ├─ debug.py            # M2 调试浮层 / 标注 PNG
 │  │  └─ hud.py              # Pillow 卡片渲染 + 置顶可拖动窗口
 │  ├─ vision/
 │  │  ├─ imageops.py
@@ -105,6 +110,7 @@ CI 对固定验证集跑 `--min-cases 2`、对真实 holdout 跑 `--min-cases 8`
 │  │  ├─ glyphs.py            # 155 字闭集字模（兜底）
 │  │  ├─ ocr.py               # RapidOCR 名牌检测/识别/闭集校正
 │  │  ├─ runes.py             # 白色符文掩码
+│  │  ├─ debugframe.py        # M2 调试帧（只读，按需构建）
 │  │  └─ pipeline.py          # ROI -> Result
 │  ├─ live/
 │  │  ├─ frame.py             # FrameSource / ROI / 状态

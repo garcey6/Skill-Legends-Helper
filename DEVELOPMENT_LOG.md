@@ -105,6 +105,22 @@
   numpy/Pillow/rapidocr。
 - **状态**：已修复。
 
+## 2026-11-23 M1 回放复用输入层，pytest 只作开发依赖
+
+- **现象**：已有 `FrameSource`/`ImageFrameSource`，但真实图回归没有统一入口；测试直接喂数组，
+  无法从用户截图复现同一条识别链路。
+- **根因**：输入抽象只服务实时线程，离线验收另走 `tools/live_recognize.py`，缺少 fixtures
+  契约和自动发现；把 pytest 当成可选工具，导致收集范围不固定。
+- **正确做法**：`app/live/sources.py` 只做无逻辑别名（`CaptureSource = FrameSource`、
+  `StaticFrameSource = ImageFrameSource`），`app.replay`/`python -m app --replay` 走同一协议；
+  fixtures 的期望标签是唯一来源，旧 holdout 只保留引用。pytest 放 `requirements-dev.txt`
+  （`-r requirements.txt` + 精确锁版本），CI 分两步安装，PyInstaller 显式
+  `--exclude-module pytest/_pytest/tests/test`，不让测试依赖进入发行包。
+- **证据**：`app/live/sources.py`、`app/replay.py`、`app/__main__.py`、
+  `tests/fixtures/`、`tests/test_replay.py`、`tests/conftest.py`、`requirements-dev.txt`、
+  `tools/build_release.py`。
+- **状态**：已实现；fixture 2/10，缺口 8，阈值只升不降。
+
 ## 2026-11-21 “未核验”不是免责声明
 
 - **现象**：CI 日志、Release 资产、第三方依赖状态经常在没当场确认时被写成“应该没问题”。

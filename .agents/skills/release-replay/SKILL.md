@@ -13,16 +13,18 @@ description: 发版前的回放、验证集和准确率回归流程；当准备�
 
 ## 三层验证
 
-1. **单元测试**：`python -m unittest discover -s tests -t .`
+1. **单元测试与 fixtures**：`python -m pytest -q`（pytest 只来自 `requirements-dev.txt`）；
+   `tests/fixtures/` 自动发现真实图并逐条断言英雄/流派，输出 fixture 数/目标 10/缺口。
 2. **固定验证集**：`python tools/validate_cases.py --strict`，覆盖 `samples/validation/`
    的真实窗口截图；当前只有 2 个 case，新增截图必须补 `meta.json`。
-3. **回放夹具**：`python -m tools.live_recognize --replay samples/frames/draft_001`，检查
-   识别链路而不是单帧函数。
+3. **回放夹具**：`python -m app --replay tests/fixtures/screenshots/<图>.png` 或
+   `python -m tools.live_recognize --replay samples/frames/draft_001`，检查识别链路而不是单帧函数。
 
-新增准确率回归：
+真实 holdout 另跑：
 
 ```powershell
-python tools/run_accuracy.py --strict
+python tools/run_accuracy.py --strict --min-cases 2
+python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 6
 ```
 
 输出 `slot_accuracy`、`hero_name_accuracy`、`exact_case_rate` 与 P50/P95 延迟。任何识别

@@ -29,15 +29,20 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
-      - name: Install dependencies
+      - name: Install runtime dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Unit tests
-        run: python -m unittest discover -s tests -t . -v
+      - name: Install dev dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Unit tests and replay fixtures
+        run: python -m pytest -q
 
       - name: Validation fixtures
         run: python tools/validate_cases.py --strict

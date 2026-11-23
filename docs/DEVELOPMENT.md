@@ -17,10 +17,13 @@ python agent.py
 # 不启动网页控制台
 python agent.py --no-server
 
-# 命令行分析一张截图
-python -m app.cli samples/draft_001.png
+# M1 单图回放（不启动浮窗/控制台）
+python -m app --replay tests/fixtures/screenshots/draft001_1800x1118.png
 
-# 自动识别层：回放离线帧
+# 从截图生成 fixture 草稿期望，修正标签后再提交
+python -m app --generate-expected D:\captures\draft_005.png --out tests/fixtures/expected
+
+# 自动识别层：回放离线帧目录
 python -m tools.live_recognize --replay samples/frames/draft_001 --pretty
 
 # 自动识别层：直接抓活窗口（需要标题匹配的游戏窗口）
@@ -37,15 +40,21 @@ python -X utf8 tools/import_validation.py --image D:\captures\holdout_001.png `
 ## 测试
 
 ```powershell
-python -m unittest discover -s tests -t . -v
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt   # pytest 只用于开发/CI
+python -m pytest -q
 python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2
 python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 6
 ```
 
-当前共 **121 项**；安装 RapidOCR/OpenCV 后，两项条件用例不再跳过，共 **123 项**。覆盖：
+pytest 每次尾部打印 `holdout 用例数：N / 目标 10，缺口 N`；fixture 阈值只升不降。
+当前 pytest **132 项通过、3 项按环境跳过**（未装 RapidOCR 时）；安装 OCR 后条件用例会变化。
+fixtures 的图片与期望标签在 `tests/fixtures/`，两条旧 holdout 用例已迁入，避免两套标签源。
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；
+- M1 静态回放：fixtures 自动发现、真实图逐条断言、`python -m app --replay`、
+  `--generate-expected`、`CaptureSource`/`StaticFrameSource` 兼容别名；
 - 缩放后的识别（1280px 宽）；
 - 自动识别层：色度流派 + 白色符文决胜、RapidOCR 英雄名 + 字模兜底、两套回放夹具、run 数不符降级、稳定性/中位数、名牌碎片合并；
 - 攻略 frontmatter / 分段 / 60 篇加载；
@@ -99,10 +108,13 @@ CI 对固定验证集跑 `--min-cases 2`、对真实 holdout 跑 `--min-cases 6`
 │  │  └─ pipeline.py          # ROI -> Result
 │  ├─ live/
 │  │  ├─ frame.py             # FrameSource / ROI / 状态
+│  │  ├─ sources.py           # M1 兼容别名（CaptureSource / StaticFrameSource）
 │  │  ├─ win32src.py          # ROI-only GDI 抓帧
 │  │  ├─ replaysrc.py         # 回放 / 单图源
 │  │  ├─ stability.py         # diff / median / 指针粗检
 │  │  └─ sampler.py           # 采集线程 + 识别线程 + 队列
+│  ├─ replay.py              # M1 单图回放 / fixtures / 草稿期望
+│  ├─ __main__.py            # python -m app --replay
 │  ├─ kb/
 │  │  ├─ cards.py            # 卡牌加载 + 每英雄核心卡排序
 │  │  ├─ guides.py
@@ -135,6 +147,11 @@ CI 对固定验证集跑 `--min-cases 2`、对真实 holdout 跑 `--min-cases 6`
 │  ├─ frames/draft_001 / draft_002   # 回放夹具
 │  └─ validation/            # 两套真实窗口验证图 + meta.json
 │     └─ holdout/            # 真实帧 holdout（由 import_validation.py 登记）
+├─ tests/
+│  ├─ conftest.py            # pytest 输出 fixture 数/缺口
+│  └─ fixtures/
+│     ├─ screenshots/        # M1 真实图（两条旧 holdout 已迁入）
+│     └─ expected/           # 同名 JSON 期望标签
 ├─ tools/
 │  ├─ preview_draft.py       # 全屏示例
 │  ├─ import_game_data.py    # Excel/规则 → JSON

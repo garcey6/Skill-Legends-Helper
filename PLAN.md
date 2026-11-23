@@ -8,8 +8,9 @@
 | 项目 | 当前值 | 说明 |
 | --- | --- | --- |
 | 主线版本 | `v0.2.3` | 已发布 GitHub Release |
-| 测试 | 121 项通过，2 项按环境跳过 | 安装 RapidOCR/OpenCV 后为 123 项 |
+| 测试 | 132 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
 | 固定验证集 | 2 例 | `samples/validation/meta.json` |
+| fixture 回放 | 2 例 | `tests/fixtures/`；M1 起点，目标 10 |
 | 真实帧 holdout | 6 组 | `samples/validation/holdout/meta.json` |
 | CI 准确率门槛 | 固定集 2 / holdout 6 | 分别对应两套数据，holdout 达到 10 组后提到 8 |
 | 模板分组 | hd / fhd / qhd 已接入运行时 | 三组暂时共用 1800px 模板，**未按分辨率重采** |
@@ -24,6 +25,9 @@
 
 目标：让“系统推荐”的输入可信，而不是只证明两张固定图没坏。
 
+- [x] M1 静态回放：复用 `FrameSource`，新增 `python -m app --replay`、fixtures 自动发现和
+      草稿期望生成；至少 1 条真实图通过。
+- [x] 两条旧 holdout 用例迁入 `tests/fixtures/`，holdout 只保留引用，不维护第二套标签。
 - [ ] 真实帧从 6 组补到 10 组，覆盖 1080p / 2K / 4K、无边框 / 窗口化、1–5 英雄、
       含“特权解锁 / 随机”的界面。
 - [ ] 每组独立画面，禁止同屏连拍、重复帧、合成图充数。
@@ -35,12 +39,14 @@
 **验收口径**：
 
 ```powershell
+python -m pytest -q
 python tools/run_accuracy.py `
   --meta samples/validation/holdout/meta.json `
   --strict --min-cases 6
 ```
 
-当前 6 组全部通过；样本增加后门槛按阶梯提高，不能为了绿灯降低门槛。
+pytest 每次输出 fixture 数/目标 10/缺口；fixture 阈值只能随样本增长上调，禁止下调。
+当前 6 组 holdout 全部通过；样本增加后门槛按阶梯提高，不能为了绿灯降低门槛。
 
 ### 阶段二：用户预设最小可用闭环（未开始）
 
@@ -74,7 +80,8 @@ python tools/run_accuracy.py `
 
 | 阶段 | 真实帧数量 | CI `--min-cases` | 备注 |
 | --- | ---: | ---: | --- |
-| 当前 | 2 | 2 | nearest-rank 的 P95 等于最大值，不能当分布 |
+| 当前 | 6 | 6 | fixture 回放另有 2 条，阈值同为 2；nearest-rank 的 P95 等于最大值，不能当分布 |
+| M1 fixtures | 2 | 2 | 目标 10；阈值只升不降，迁移两条旧 holdout 后起步 |
 | 第一档 | 10 | 8 | 先覆盖分辨率和窗口模式 |
 | 第二档 | 25 | 20 | 覆盖更多英雄数与亮度 |
 | 目标 | 200 | 200 | 架构文档的长期目标 |

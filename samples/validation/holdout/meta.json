@@ -3,59 +3,27 @@
   "cases": [
     {
       "name": "draft001_1800x1118",
-      "client": "draft001_1800x1118.png",
-      "expected": {
-        "heroes": [
-          "森林游侠",
-          "神秘法师",
-          "魔镜"
-        ],
-        "schools": [
-          "普攻流",
-          "大招流",
-          "护盾流",
-          "怒气流",
-          "回复流",
-          "中毒流",
-          "精灵流",
-          "急速流"
-        ]
-      },
+      "client": "../../../tests/fixtures/screenshots/draft001_1800x1118.png",
       "note": "1800x1118 无边框窗口；5 个名牌含特权解锁/随机；启用流派见画面",
       "resolution": [
         1800,
         1118
       ],
       "sha256": "efbb3742f5648e686626040609e186ab22f6dbb679548b8620eff272365feeed",
-      "source": "samples\\draft_001.png"
+      "source": "samples\\draft_001.png",
+      "expected_file": "../../../tests/fixtures/expected/draft001_1800x1118.json"
     },
     {
       "name": "draft002_2153x1179",
-      "client": "draft002_2153x1179.png",
-      "expected": {
-        "heroes": [
-          "守财奴",
-          "狂暴战将",
-          "精灵牧师"
-        ],
-        "schools": [
-          "闪避流",
-          "暴击流",
-          "回复流",
-          "大招流",
-          "冰冻流",
-          "精灵流",
-          "怒气流",
-          "急速流"
-        ]
-      },
+      "client": "../../../tests/fixtures/screenshots/draft002_2153x1179.png",
       "note": "2153x1179 窗口化；5 个名牌含特权解锁/随机；启用/禁用流派已标注",
       "resolution": [
         2153,
         1179
       ],
       "sha256": "a7e75334b229189613c15d11e79a94a5bb4dfc7f6dc25c53a8c6c00bbd040ef4",
-      "source": "samples\\frames\\draft_002\\frame_01.png"
+      "source": "samples\\frames\\draft_002\\frame_01.png",
+      "expected_file": "../../../tests/fixtures/expected/draft002_2153x1179.json"
     },
     {
       "name": "screenshot_1920_30",

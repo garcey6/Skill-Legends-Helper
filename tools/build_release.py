@@ -199,6 +199,10 @@ def _pyinstaller_command(
         f"{stage}{os.pathsep}.",
         str(entry),
     ]
+    # Test-only dependencies must never leak into a release even if the build
+    # environment happens to have them installed.
+    for module in ("pytest", "_pytest", "tests", "test"):
+        command.extend(["--exclude-module", module])
     if importlib.util.find_spec("rapidocr_onnxruntime") is not None:
         command.extend(["--collect-all", "rapidocr_onnxruntime"])
     return command

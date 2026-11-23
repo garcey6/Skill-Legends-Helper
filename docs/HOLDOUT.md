@@ -72,5 +72,10 @@ python tools/run_accuracy.py `
 
 - `samples/validation/meta.json`：两套固定样例，CI 每次都跑，防止基础能力回退。
 - `samples/validation/holdout/meta.json`：真实分布，当前 6 组，已接入 CI；样本增加后提高 `--min-cases`。
+- `tests/fixtures/`：M1 静态回放的唯一真实图用例源。fixtures 里的 2 组（1800×1118、
+  2153×1179）就是从 holdout 迁入的；holdout 只保留 `client` / `expected_file` 引用，
+  不再维护第二套标签。pytest 自动发现 fixtures 并打印 `N / 目标 10，缺口 N`。
 
-两条都使用 `tools/run_accuracy.py`，阈值和指标口径一致。模板分组（hd/fhd/qhd）目前共享同一套 1800px 参考模板，选择逻辑已接入运行时，但尚未按分辨率重新采样；在补齐分组模板前，不要对外宣称已针对 4K 校准。
+三条路径都用同一套识别管线；改识别参数时至少跑 pytest + 固定验证集，涉及真实分布时再跑 holdout。
+模板分组（hd/fhd/qhd）目前共享同一套 1800px 参考模板，选择逻辑已接入运行时，但尚未按分辨率
+重新采样；在补齐分组模板前，不要对外宣称已针对 4K 校准。

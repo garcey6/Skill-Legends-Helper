@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+### 新增
+
+- M1 静态回放：复用 `FrameSource` 增加 `CaptureSource` / `StaticFrameSource` 兼容别名，
+  新增 `python -m app --replay <截图>` 和 `--generate-expected`，fixtures 自动发现并逐条断言
+  英雄、流派与可选置信度下限。
+- 真实 fixture 契约：`tests/fixtures/screenshots/` + `tests/fixtures/expected/`；两条旧 holdout
+  用例已迁移，holdout 元数据只保留引用。fixture 阈值 2，目标 10，pytest 每次输出缺口。
+
 ### 文档
 
 - 新增项目基建六件套：`PRD.md`、`RULES.md`、`ARCHITECTURE.md`、`DEVELOPMENT_LOG.md`、
@@ -20,6 +28,8 @@
 - 新增 4 张真实截图（1920×1080 / 2560×1600，30/80 亮度，含“特权解锁/随机”），真实帧
   holdout 从 2 组增至 6 组，CI holdout 门槛从 2 提到 6；4 张全屏素材只登记英雄，流派
   未人工复核，统一记为 `null`。
+- 新增 `requirements-dev.txt`（继承运行时依赖，精确锁定 `pytest==9.2.0`）；CI 分两步安装
+  运行时/开发依赖并改用 pytest；PyInstaller 显式排除 pytest 与测试目录。
 
 ### 计划中
 

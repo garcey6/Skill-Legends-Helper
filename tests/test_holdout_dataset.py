@@ -10,6 +10,16 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 HOLDOUT = ROOT / "samples" / "validation" / "holdout"
 META = HOLDOUT / "meta.json"
+FIXTURES = ROOT / "tests" / "fixtures"
+
+
+def case_expected(case: dict) -> dict:
+    if case.get("expected") is not None:
+        return case["expected"]
+    relative = case.get("expected_file")
+    if not relative:
+        return {}
+    return json.loads((HOLDOUT / relative).read_text(encoding="utf-8"))
 
 
 class HoldoutDatasetTest(unittest.TestCase):
@@ -23,15 +33,27 @@ class HoldoutDatasetTest(unittest.TestCase):
     def test_every_case_has_a_real_image_and_labels(self) -> None:
         for case in self.cases:
             with self.subTest(case=case.get("name")):
-                heroes = (case.get("expected") or {}).get("heroes") or []
+                expected = case_expected(case)
+                heroes = expected.get("heroes") or []
                 self.assertGreaterEqual(len(heroes), 1)
                 self.assertTrue(all(heroes), "empty hero name in %s" % case.get("name"))
-                image_path = HOLDOUT / str(case.get("client") or "")
+                image_path = (HOLDOUT / str(case.get("client") or "")).resolve()
                 self.assertTrue(image_path.is_file(), image_path)
                 with Image.open(image_path) as image:
                     image.load()
                     self.assertEqual(list(image.size), list(case.get("resolution") or []))
                 self.assertEqual(len(str(case.get("sha256") or "")), 64)
+
+    def test_migrated_cases_use_fixture_expected_files(self) -> None:
+        by_name = {case.get("name"): case for case in self.cases}
+        for name in ("draft001_1800x1118", "draft002_2153x1179"):
+            with self.subTest(case=name):
+                case = by_name[name]
+                self.assertIsNone(case.get("expected"))
+                expected_file = case.get("expected_file")
+                self.assertTrue(expected_file)
+                self.assertTrue((HOLDOUT / expected_file).is_file())
+                self.assertTrue((HOLDOUT / str(case.get("client"))).is_file())
 
     def test_cases_are_not_the_same_frame_or_the_same_label_set(self) -> None:
         digests = [str(case.get("sha256") or "") for case in self.cases]
@@ -39,7 +61,7 @@ class HoldoutDatasetTest(unittest.TestCase):
 
         labels = []
         for case in self.cases:
-            expected = case.get("expected") or {}
+            expected = case_expected(case)
             labels.append(
                 (
                     tuple(case.get("resolution") or []),

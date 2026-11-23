@@ -12,6 +12,7 @@
 
 - 工作目录：仓库根目录。
 - 运行时依赖只允许 `numpy`、`Pillow`、`rapidocr_onnxruntime`；新增依赖前先说明理由。
+  `pytest` 只允许放在 `requirements-dev.txt`，不得进入运行时或发行包。
 - 平台：Windows 10/11；Python 3.10+。
 - 识别资产由 `tools/` 下的脚本生成，不手工编辑生成物。
 - 当前浮窗是 Tkinter，网页控制台是本地 HTML/JS；不要引入 PyQt 或第二套 UI 框架。
@@ -19,16 +20,19 @@
 ## 常用命令
 
 ```powershell
-python -m unittest discover -s tests -t .
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
 python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2
 python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 6
+python -m app --replay tests/fixtures/screenshots/draft001_1800x1118.png
 python -m tools.live_recognize --replay samples/frames/draft_001
 ```
 
 如果本机没有 `python`，使用项目 `启动助手.bat` 里配置的 Python。
-固定验证集用 `--min-cases 2`，真实 holdout 当前用 `--min-cases 6`；都不是长期目标，
-样本增加后按 [PLAN](PLAN.md) 阶梯提高，holdout 达到 10 组后提到 8。
+pytest 会输出 fixture 数/目标 10/缺口；fixture 阈值只升不降。固定验证集用
+`--min-cases 2`，真实 holdout 当前用 `--min-cases 6`；都不是长期目标，样本增加后按
+[PLAN](PLAN.md) 阶梯提高，holdout 达到 10 组后提到 8。
 
 ## 仓库内 AI 技能
 
@@ -72,7 +76,7 @@ python -m tools.live_recognize --replay samples/frames/draft_001
 
 ```powershell
 git diff --check
-python -m unittest discover -s tests -t .
+python -m pytest -q
 python tools/validate_cases.py --strict
 ```
 

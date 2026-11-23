@@ -16,6 +16,7 @@
 │      │                                         │     Tkinter 浮窗   │
 │      └─────────────────────────────────────────┴──►  Pillow 卡片    │
 │                                                                     │
+│  StaticFrameSource ──► app.replay ──► 识别管线                       │
 │  run.py ──► 本地 HTTP 控制台（HTML/JS）──► 攻略/设置/图鉴/上传       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -32,7 +33,9 @@ agent.py
 ├─ app.overlay.hotkey         全局热键
 ├─ app.overlay.hud            Pillow 卡片渲染 + Tk 窗口 + 滚动视口
 ├─ app.live.win32src          ROI-only GDI 抓帧
+├─ app.live.sources           M1 兼容别名：CaptureSource / StaticFrameSource（无业务逻辑）
 ├─ app.live.sampler           采集线程 + 识别线程 + 去重
+├─ app.replay                 M1 单图回放、fixtures 发现、草稿期望生成
 ├─ app.vision.assets          TemplateGroup / AssetBundle / AssetCache
 ├─ app.vision.pipeline        ROI -> 识别 Result
 ├─ app.vision.ocr             RapidOCR 名牌检测/识别/闭集校正
@@ -76,6 +79,24 @@ tools/*                       单向生成资产、回放验收、准确率、�
 6. `recognize_rois` 输出槽位、英雄名、流派 ID、置信度、耗时。
 7. `Advisor.recommend` 查知识库并排序；没有命中时返回明确的“暂无攻略”，不猜。
 8. `render_result` 为每个识别到的英雄渲染完整区块；超过视口高度时滚动。
+
+### 4.1 静态回放（M1）
+
+`app/live/sources.py` 只提供无逻辑别名：`CaptureSource = FrameSource`、
+`StaticFrameSource = ImageFrameSource`。静态图与实时窗口都通过 `grab(roi)` / `state()` 进入同一条
+`recognize_rois` 管线，不另造输入抽象，也不改 `LiveSampler` 签名。
+
+```powershell
+python -m app --replay tests/fixtures/screenshots/draft001_1800x1118.png
+python -m app --generate-expected <截图> --out tests/fixtures/expected
+```
+
+fixture 契约：`tests/fixtures/expected/<stem>.json` 与
+`tests/fixtures/screenshots/<stem>.png` 同名；JSON 至少含 `heroes`，可选
+`schools.enabled` / `schools.banned` / `min_confidence`。`tests/conftest.py` 与
+`tests/test_replay.py` 自动发现并逐条跑真实图。两条旧 holdout 的图片和标签已迁入 fixtures；
+`samples/validation/holdout/meta.json` 只保留 `client` / `expected_file` 引用，避免两套标签源。
+pytest 是 dev-only 依赖，绝不进入运行时或发行包；真实验证图仍受体积/git 卫生约束。
 
 ## 5. 数据与资产契约
 

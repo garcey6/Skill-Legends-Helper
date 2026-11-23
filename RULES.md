@@ -25,7 +25,7 @@
 4. 跑全量测试：
 
 ```powershell
-python -m unittest discover -s tests -t .
+python -m pytest -q
 python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2
 python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 6
@@ -81,6 +81,7 @@ python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --stric
   [ARCHITECTURE](ARCHITECTURE.md) 的数据与资产契约。
 - 识别模板、品牌资产、立绘素材分目录存放，不混放。
 - 新增任何运行时依赖前先说明理由；当前只允许 `numpy`、`Pillow`、`rapidocr_onnxruntime`。
+  测试依赖只能放 `requirements-dev.txt`（继承运行时依赖并精确锁版本），不进发行包。
 
 ## 8. 提交与 PR
 

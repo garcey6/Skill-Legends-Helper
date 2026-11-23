@@ -71,12 +71,12 @@
 - **日期**：2026-11-19
 - **状态**：已接受
 - **背景**：截图、DPI、窗口查找和 Tkinter 都是 Windows 特定路径；Linux 容器无法真实覆盖。
-- **决策**：GitHub Actions 使用 `windows-latest` + Python 3.11；安装 `requirements.txt` 和
-  `requirements-build.txt`；依次跑 unittest、固定验证集、holdout、打包。Release 工作流由
-  `v*` 标签触发。
+- **决策**：GitHub Actions 使用 `windows-latest` + Python 3.11；分两步安装
+  `requirements.txt` 和 `requirements-dev.txt`（pytest 只进 dev）；依次跑 pytest、固定验证集、
+  holdout、打包。Release 工作流由 `v*` 标签触发。
 - **备选**：Ubuntu + mock Win32；只在本地跑测试。
-- **后果**：CI 成本更高、启动更慢，但能覆盖真实平台。没有 RapidOCR 的本地环境会跳过两个
-  OCR 用例；文档必须写成“120 通过、2 跳过；装 OCR 后 122”。
+- **后果**：CI 成本更高、启动更慢，但能覆盖真实平台。没有 RapidOCR 的本地环境会跳过部分
+  OCR 用例；文档必须写成“132 通过、3 跳过”这类当场核验的数字，不得沿用旧值。
 - **证据**：`.github/workflows/ci.yml`；`.github/workflows/release.yml`。
 
 ## ADR-006 用户预设的存储形态（待决）
@@ -126,6 +126,23 @@
   schema 带版本，迁移时保留未知字段。
 - **决策前不得**：实现“整体替换”伪装成字段级合并；也不得把空数组静默当继承。
 
+## ADR-009 M1 回放复用 FrameSource，fixtures 作为唯一真实图用例源
+
+- **日期**：2026-11-23
+- **状态**：已接受
+- **背景**：识别管线已经有 `FrameSource` 协议、`ImageFrameSource` 和窗口源，但测试主要直接喂数组；
+  新增 `python -m app --replay` 与真实图回归时，若另造一套输入抽象会让调试覆盖层和缩放逻辑分叉。
+- **决策**：`app/live/sources.py` 提供无逻辑别名 `CaptureSource = FrameSource`、
+  `StaticFrameSource = ImageFrameSource`；静态图与实时窗口都实现同一协议。M1 将两条旧 holdout
+  用例的图片与期望标签迁到 `tests/fixtures/`，holdout 元数据只保留引用；pytest 为唯一测试入口，
+  dev 依赖放 `requirements-dev.txt`（继承运行时依赖并精确锁版本），打包显式排除 pytest/tests。
+- **备选**：新建 `CaptureSource` 协议并让 `LiveSampler` 改签名；继续用直接数组测试；把 pytest 加进运行时依赖。
+- **后果**：输入层不产生第二套抽象，识别管线签名不变；fixtures 是真实图用例的唯一标签来源，
+  holdout 仍负责 6 例 CI 准确率。pytest 只是开发依赖，不进 `requirements.txt` 或发行包；代价是
+  `tests/fixtures` 仍需遵守图片体积/git 卫生规则，且 M3 必须在 fixtures 上增加跨分辨率用例。
+- **证据**：`app/live/sources.py`、`app/replay.py`、`tests/test_replay.py`、
+  `requirements-dev.txt`、`tools/build_release.py`、`tests/fixtures/`。
+
 ## 决策索引
 
 | 编号 | 主题 | 状态 |
@@ -138,3 +155,4 @@
 | ADR-006 | 预设存储形态 | 待决 |
 | ADR-007 | 卡牌清单来源 | 待决 |
 | ADR-008 | 字段级合并语义 | 待决 |
+| ADR-009 | M1 回放复用 FrameSource / fixtures 唯一来源 | 已接受 |

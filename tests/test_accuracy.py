@@ -59,6 +59,17 @@ class CurrentValidationCasesTest(unittest.TestCase):
         self.assertEqual(report["metrics"]["failures"], [])
         self.assertEqual(report["metrics"]["exact_case_rate"], 1.0)
 
+    def test_holdout_cases_can_load_expected_files(self) -> None:
+        from pathlib import Path
+
+        from tools.run_accuracy import evaluate_validation
+
+        meta = Path(__file__).resolve().parent.parent / "samples" / "validation" / "holdout" / "meta.json"
+        report = evaluate_validation(meta)
+        self.assertEqual(report["metrics"]["cases"], 6)
+        self.assertTrue(all(case["expected"] for case in report["cases"]))
+        self.assertEqual(report["metrics"]["failures"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

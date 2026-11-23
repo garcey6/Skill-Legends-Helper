@@ -106,6 +106,16 @@ def strict_failure(metrics: Mapping[str, Any], min_cases: int = 0) -> bool:
     return bool(metrics.get("failures"))
 
 
+def _case_expected(case: Dict[str, Any], base: Path) -> Dict[str, Any]:
+    """Read labels inline, or from a migrated fixture expected file."""
+    if case.get("expected") is not None:
+        return dict(case["expected"])
+    relative = case.get("expected_file")
+    if not relative:
+        return {}
+    return json.loads((base / str(relative)).read_text(encoding="utf-8"))
+
+
 def evaluate_validation(
     meta_path: Path = DEFAULT_META,
     base: Optional[Path] = None,
@@ -118,7 +128,7 @@ def evaluate_validation(
 
     cases: List[Dict[str, Any]] = []
     for case in meta.get("cases", []):
-        expected = list(case.get("expected", {}).get("heroes") or [])
+        expected = list(_case_expected(case, base).get("heroes") or [])
         path = base / case["client"]
         started = time.perf_counter()
         error: Optional[str] = None

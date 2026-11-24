@@ -30,11 +30,16 @@ def recognize_rois(
     expected = int(layout.get("expected_enabled", 8))
     resolution = layout.get("reference_resolution") or {}
     reference_width = float(resolution.get("width", layout.get("reference_width", 1800)) or 1800)
+    base_run_w = float(layout.get("base_run_w", 55.0) or 55.0)
+    # At 2560px the 80-brightness strip produces a few thin glare/text runs
+    # beside the eight books.  Keep the minimum width tied to the expected
+    # book width, not just the raw pixel floor.
+    run_width_floor = max(8, int(0.60 * base_run_w * client_w / reference_width))
     runs = segment_runs(
         icons,
         (0.0, 1.0, 0.0, 1.0),
         sat_th=int(layout.get("sat_th", 40)),
-        min_width=max(8, int(float(layout.get("min_run_w", 20)) * client_w / reference_width)),
+        min_width=max(run_width_floor, int(float(layout.get("min_run_w", 20)) * client_w / reference_width)),
     )
     scale = 1.0
     if runs:

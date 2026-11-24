@@ -138,11 +138,12 @@ def missing_template_files(
 
 
 class AssetCache:
-    """Build matchers per template group and reuse shared files.
+    """Build matchers per template group.
 
-    Constructing GlyphMatcher from the 2MB glyph table is not free, so groups
-    that point at the same files share matchers.  The OCR model does not depend
-    on templates and is built once for the whole cache.
+    Each width band owns its matcher objects even while the bands still share
+    canonical template files.  The reference width is a scaling parameter, not
+    an identity token: the same files may later be rebuilt at another size
+    without changing the bundle selection contract.
     """
 
     def __init__(
@@ -158,14 +159,13 @@ class AssetCache:
         self.names = list(names)
         self.use_ocr = bool(use_ocr)
         self._bundles: Dict[str, AssetBundle] = {}
-        self._matcher_cache: Dict[Tuple[str, str, str, int], Tuple[SchoolMatcher, GlyphMatcher]] = {}
+        self._matcher_cache: Dict[str, Tuple[SchoolMatcher, GlyphMatcher]] = {}
         self._ocr_matcher: Optional[RapidOcrNameMatcher] = (
             RapidOcrNameMatcher(self.names) if self.use_ocr else None
         )
 
     def _load_matchers(self, group: TemplateGroup) -> Tuple[SchoolMatcher, GlyphMatcher]:
-        key = (group.schools, group.runes, group.glyphs, group.reference_width)
-        cached = self._matcher_cache.get(key)
+        cached = self._matcher_cache.get(group.id)
         if cached is not None:
             return cached
         schools_path = self.base_dir / group.schools
@@ -189,7 +189,7 @@ class AssetCache:
             ),
             GlyphMatcher(glyph_data, self.names),
         )
-        self._matcher_cache[key] = matchers
+        self._matcher_cache[group.id] = matchers
         return matchers
 
     def for_width(self, client_width: int) -> AssetBundle:

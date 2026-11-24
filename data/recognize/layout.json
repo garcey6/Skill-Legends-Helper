@@ -19,7 +19,7 @@
       "id": "fhd",
       "min_width": 1920,
       "max_width": 2559,
-      "reference_width": 1800,
+      "reference_width": 1920,
       "schools": "schools_chroma.json",
       "runes": "school_runes.json",
       "glyphs": "glyphs.json"
@@ -28,7 +28,7 @@
       "id": "qhd",
       "min_width": 2560,
       "max_width": null,
-      "reference_width": 1800,
+      "reference_width": 2560,
       "schools": "schools_chroma.json",
       "runes": "school_runes.json",
       "glyphs": "glyphs.json"

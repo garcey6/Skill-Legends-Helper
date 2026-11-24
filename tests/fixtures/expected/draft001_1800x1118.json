@@ -17,5 +17,31 @@
     ],
     "banned": null
   },
-  "min_confidence": 0.0
+  "min_confidence": 0.0,
+  "annotation": {
+    "base_resolution": {
+      "width": 1800,
+      "height": 1118
+    },
+    "features": [
+      {
+        "name": "icons",
+        "box": [
+          0.18,
+          0.880143,
+          0.68,
+          0.11449
+        ]
+      },
+      {
+        "name": "nameplates",
+        "box": [
+          0.02,
+          0.349732,
+          0.96,
+          0.270125
+        ]
+      }
+    ]
+  }
 }

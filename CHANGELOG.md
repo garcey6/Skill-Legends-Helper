@@ -16,12 +16,20 @@
 - 真实 fixture 契约：`tests/fixtures/screenshots/` + `tests/fixtures/expected/`；旧 holdout
   用例和新增真实截图统一迁入，holdout 元数据只保留引用。fixture 阈值升到 10，目标 10，
   pytest 每次输出 `10 / 目标 10，缺口 0`。
+- M3 归一化标注（ADR-012）：expected JSON 可选 `annotation`，保存 `base_resolution` 与
+  0–1 的 `[x,y,w,h]`；`tools/annotate_fixture.py` 提供最小 Tkinter 拖拽标注，回放用归一化
+  ROI 跨分辨率取图。
+- 模板分组使用独立 matcher 对象和各自 `reference_width`（1800/1920/2560）；模板文件仍
+  共享，待独立重采后才能宣称 4K 校准。
 
 ### 修复
 
+- 2560 宽图标条按 `base_run_w` 缩放最小 run 宽，去掉高光/文字造成的细碎 run，
+  `screenshot_2560_80` 的 `run_count` 从 13 回到 8。
 - 字模兜底新增全名评分路径：当某个字不在 top5 时，按完整英雄名的逐字模板最高分重排，
   并要求分数 ≥130、领先第二名 ≥20；修复 `极寒掌控者` 首字 `极` 排第 50 导致整名为 null，
-  同时保持“特权解锁 / 随机”为 null。10 组真实 fixture 全部通过。
+  同时保持“特权解锁 / 随机”为 null。10 组真实 fixture 的英雄名/槽位全部通过；流派非空标签
+  仍只有 3/10，不能据此宣称流派回归达标。
 
 ### 文档
 

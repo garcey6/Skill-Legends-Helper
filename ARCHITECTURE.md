@@ -37,6 +37,7 @@ agent.py
 ├─ app.live.sources           M1 兼容别名：CaptureSource / StaticFrameSource（无业务逻辑）
 ├─ app.live.sampler           采集线程 + 识别线程 + 去重
 ├─ app.replay                 M1 单图回放、fixtures 发现、草稿期望生成
+├─ app.vision.annotation      归一化标注 schema / 缩放 / 原子写回（M3）
 ├─ app.vision.assets          TemplateGroup / AssetBundle / AssetCache
 ├─ app.vision.pipeline        ROI -> 识别 Result
 ├─ app.vision.debugframe      调试帧（ROI/OCR/模板/耗时/失败原因）
@@ -121,6 +122,22 @@ ROI/OCR/模板层，`A` 全开，`S` 保存标注 PNG，`Esc` 关闭；窗口位
 浮层与 PNG 共用 `render_debug_image`，不存在第二套绘制逻辑。调试开启时会临时隐藏主浮窗，
 关闭后恢复最近一次分析卡片。
 
+### 4.3 归一化标注（M3）
+
+`tests/fixtures/expected/*.json` 是唯一标注源，可选块：
+
+```json
+"annotation": {
+  "base_resolution": {"width": 1800, "height": 1118},
+  "features": [{"name": "icons", "box": [0.18, 0.88, 0.68, 0.115]}]
+}
+```
+
+`box` 为 `[x, y, w, h]`，全部是相对截图宽高的 0–1 值；`app.vision.annotation` 负责校验、
+缩放和原子写回，`tools/annotate_fixture.py` 只做最小 Tkinter 拖拽标注。`app.replay` 在 case
+带 annotation 时用归一化 ROI 取图标条/名牌，否则沿用 `layout.json`。跨分辨率断言只检查
+归一化值可缩放，不把“模板已按 4K 重采”混为一谈。
+
 ## 5. 数据与资产契约
 
 ### 5.1 只读资产（随包、运行时不得写）
@@ -173,14 +190,15 @@ ROI/OCR/模板层，`A` 全开，`S` 保存标注 PNG，`Esc` 关闭；窗口位
 `data/recognize/layout.json` 定义：
 
 - `reference_resolution`：当前参考宽度 1800。
-- `template_groups`：`hd`（<1920）、`fhd`（1920–2559）、`qhd`（≥2560）。
-- `AssetCache.for_width(client_width)` 选择分组并缓存 bundle；`LiveSampler` 在客户区宽度
-  变化时切换，失败保留旧 bundle。
+- `template_groups`：`hd`（<1920）、`fhd`（1920–2559）、`qhd`（≥2560），参考宽度分别为
+  1800 / 1920 / 2560。
+- `AssetCache.for_width(client_width)` 选择分组并缓存 bundle；每个分组拥有独立 matcher
+  对象（即使模板文件仍共享），`LiveSampler` 在客户区宽度变化时切换，失败保留旧 bundle。
 
 现状：三个分组仍指向同一批 `schools_chroma.json` / `school_runes.json` / `glyphs.json`，
-参考宽度都是 1800。分组是**接线完成、模板未分采**，不能宣称已按 4K 校准。重采时必须给
-每组独立 `reference_width`，并加“不同分组文件不应相同”的测试；在此之前不要反转现有共享
-缓存测试来锁死错误实现。
+因此这仍是**接线完成、模板未分采**，不能宣称已按 4K 校准。独立 matcher 是为了让后续
+重采、缩放参数和失败隔离有明确落点；重采时必须给每组独立模板文件，并加“不同分组文件
+不应相同”的测试。
 
 ## 7. 品牌资产与启动画面（计划，未实现）
 
@@ -199,6 +217,6 @@ ROI/OCR/模板层，`A` 全开，`S` 保存标注 PNG，`Esc` 关闭；窗口位
 - 独占全屏、受保护画面或反作弊渲染可能让截图失败；优先无边框窗口。
 - 本机未安装 RapidOCR 时走字模兜底；本地发行包因此明显小于 CI 的 OCR 包。
 - 真实帧 holdout 只有 10 组，准确率结论只覆盖这十张图；其中 4 张全屏压力样本和 B/C/D 三组未标注流派。C 已作为真实失败样本入库，并由全名兜底识别。
-- `screenshot_2560_80` 在 80 亮度下流派分段失败（`run_count 13`），属于 2560 宽相对 1800 基准的缩放缺陷；列为 M3 跨分辨率验证项，不单独先修。
+- `screenshot_2560_80` 在 80 亮度下流派分段曾失败（`run_count 13`）；M3 按 `base_run_w` 缩放最小 run 宽后降到 8，但流派状态仍为 `partial`，且 7 组流派标签未人工核对，不能当作流派回归通过证据。
 - 预设功能未实现；当前只有系统推荐。
 - 无应用图标/启动画面/代码签名，Windows SmartScreen 可能提示未知发布者。

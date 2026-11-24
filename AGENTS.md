@@ -26,6 +26,7 @@ python tools/validate_cases.py --strict
 python tools/run_accuracy.py --strict --min-cases 2 --max-p95-ms 1000
 python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8 --max-p95-ms 1000
 python -m app --replay tests/fixtures/screenshots/draft001_1800x1118.png
+python tools/annotate_fixture.py --image tests/fixtures/screenshots/draft001_1800x1118.png
 python -m tools.live_recognize --replay samples/frames/draft_001
 ```
 

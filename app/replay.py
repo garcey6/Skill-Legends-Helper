@@ -14,6 +14,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from app.kb.recommend import Advisor
 from app.live.sources import StaticFrameSource
+from app.vision.annotation import Annotation, parse_annotation
 from app.vision.assets import AssetCache
 from app.vision.pipeline import build_result, recognize_rois
 
@@ -30,6 +31,7 @@ class ReplayCase:
     image_path: Path
     expected: Dict[str, Any]
     expected_path: Path
+    annotation: Optional[Annotation] = None
 
 
 def load_assets(
@@ -75,17 +77,42 @@ def discover_cases(fixtures_root: Path = FIXTURES_ROOT) -> List[ReplayCase]:
                 image_path=image_path,
                 expected=payload,
                 expected_path=expected_path,
+                annotation=parse_annotation(payload.get("annotation")),
             )
         )
     return cases
 
 
-def recognize_image(path: Path, assets: Dict[str, Any] | None = None) -> Dict[str, Any]:
+def _annotated_rois(layout: Dict[str, Any], annotation: Optional[Annotation]) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    base_icons = tuple(layout["rois"]["icons"])
+    base_names = tuple(layout["rois"]["nameplates"])
+    if annotation is None:
+        return base_icons, base_names
+    features = {feature.name: feature.box for feature in annotation.features}
+    icons = features.get("icons")
+    names = features.get("nameplates")
+    if icons is None or names is None:
+        return base_icons, base_names
+
+    def as_roi(box: tuple[float, float, float, float]) -> tuple[float, ...]:
+        x, y, w, h = box
+        return (x, x + w, y, y + h)
+
+    return as_roi(icons), as_roi(names)
+
+
+def recognize_image(
+    path: Path,
+    assets: Dict[str, Any] | None = None,
+    *,
+    annotation: Optional[Annotation] = None,
+) -> Dict[str, Any]:
     assets = load_assets() if assets is None else assets
     source = StaticFrameSource(path)
     state = source.state()
-    icons = source.grab(tuple(assets["layout"]["rois"]["icons"]))
-    nameplates = source.grab(tuple(assets["layout"]["rois"]["nameplates"]))
+    icon_roi, name_roi = _annotated_rois(assets["layout"], annotation)
+    icons = source.grab(icon_roi)
+    nameplates = source.grab(name_roi)
     if icons is None or nameplates is None:
         raise RuntimeError("static source returned no frame")
     bundle = assets["cache"].for_width(state.client_w)
@@ -115,7 +142,7 @@ def recognize_image(path: Path, assets: Dict[str, Any] | None = None) -> Dict[st
 
 
 def run_case(case: ReplayCase, assets: Dict[str, Any] | None = None) -> Dict[str, Any]:
-    result = recognize_image(case.image_path, assets)
+    result = recognize_image(case.image_path, assets, annotation=case.annotation)
     result["name"] = case.name
     return result
 

@@ -25,12 +25,12 @@
 - **背景**：模板在固定参考宽度下生成；不同分辨率/窗口尺寸下图标像素尺寸变化，单一模板会
   降低色度和字模匹配的稳定性。
 - **决策**：按客户区宽度分三档：`hd < 1920`、`fhd 1920–2559`、`qhd >= 2560`。每档有独立
-  `reference_width` 和模板文件；运行时通过 `AssetCache.for_width()` 选择并缓存；切档失败
-  保留旧 bundle，不中断识别。未覆盖宽度回退 `hd` 并打印警告。
+  `reference_width` 和 matcher 对象，模板文件可以独立；运行时通过 `AssetCache.for_width()`
+  选择并缓存；切档失败保留旧 bundle，不中断识别。未覆盖宽度回退 `hd` 并打印警告。
 - **备选**：所有分辨率共用一套模板；按 DPI 缩放而非宽度；运行时动态缩放模板。
-- **后果**：分组选择和缓存已经接入 `agent`/`LiveSampler`；但截至目前三档仍指向同一批
-  1800px 模板，**不能宣称已按 4K 校准**。重采时必须让不同档指向不同文件，并加“不同档文件
-  不应相同”的测试；在完成前，现有“共享文件”测试是过渡状态，不能当成长期正确性依据。
+- **后果**：分组选择和缓存已经接入 `agent`/`LiveSampler`；三档使用独立 matcher 对象和
+  `reference_width` 1800 / 1920 / 2560，但模板文件仍共享，**不能宣称已按 4K 校准**。重采时
+  必须让不同档指向不同文件，并加“不同档文件不应相同”的测试；独立 matcher 不是独立模板。
 - **证据**：`data/recognize/layout.json`；`app/vision/assets.py`；
   `tests/test_template_groups.py`；`docs/ROADMAP.md`。
 
@@ -189,21 +189,23 @@
   `annotation`：
   ```json
   {
-    "base_resolution": [1800, 1118],
+    "base_resolution": {"width": 1800, "height": 1118},
     "features": [
-      {"name": "hero_slot_1", "kind": "hero", "box": [0.1, 0.2, 0.3, 0.4]}
+      {"name": "hero_slot_1", "box": [0.1, 0.2, 0.3, 0.4]}
     ]
   }
   ```
   `box` 为归一化 `x, y, w, h`（0–1），`base_resolution` 记录标注时的图像尺寸；运行期按实际
   客户区尺寸缩放。M1 的发现、英雄/流派断言和 `--generate-expected` 不变；M3 的几何断言直接读
   同一份 expected，不再建第二套 fixture/annotation 目录。`layout.json` 仍是运行时 ROI 配置，
-  不把 fixture 标注写进运行时资产。
+  不把 fixture 标注写进运行时资产。标注工具 `tools/annotate_fixture.py` 合并写入现有 expected，
+  不覆盖英雄/流派字段。
 - **备选**：新建 `tests/fixtures/annotations/`；expected 存绝对像素；把每张图的 ROI 写进 runtime layout。
 - **后果**：一个 fixture 只有一份标签；旧 expected 可继续省略 `annotation`，逐张迁移；M3 的标注工具
   必须合并写入 existing expected，而不是覆盖英雄/流派字段。代价是 expected schema 变复杂，且跨分辨率
   用例必须显式写 `base_resolution`，不能靠文件名猜。
-- **证据**：`tests/fixtures/expected/`、`app/replay.py`、`tests/test_replay.py`、`PLAN.md` M3。
+- **证据**：`tests/fixtures/expected/`、`app/vision/annotation.py`、`tools/annotate_fixture.py`、
+  `app/replay.py`、`tests/test_annotation.py`、`tests/test_replay.py`、`PLAN.md` M3。
 
 ## 决策索引
 

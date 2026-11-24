@@ -23,6 +23,9 @@ python agent.py --no-server
 # M1 单图回放（不启动浮窗/控制台）
 python -m app --replay tests/fixtures/screenshots/draft001_1800x1118.png
 
+# M3 归一化标注（拖拽框，s 保存到同名 expected JSON）
+python tools/annotate_fixture.py --image tests/fixtures/screenshots/draft001_1800x1118.png
+
 # 从截图生成 fixture 草稿期望，修正标签后再提交
 python -m app --generate-expected D:\captures\draft_005.png --out tests/fixtures/expected
 
@@ -55,7 +58,7 @@ pytest 每次尾部打印 `holdout 用例数：N / 目标 10，缺口 N`；fixtu
 `[accuracy]` 汇总行同时输出 `schools_labeled=N/总组数` 和流派准确率，避免只看英雄名绿灯。
 `tests/test_debug_benchmark.py` 用 21 次真实 fixture A/B 测量关闭调试的代价；只构建
 `DebugFrame` 的插桩开销预算为 5% 中位数（不含调试窗口/截图/PNG 成本）。
-当前 pytest **150 项通过、3 项按环境跳过**（未装 RapidOCR 时）；`unittest` 入口 138 项通过、
+当前 pytest **161 项通过、3 项按环境跳过**（未装 RapidOCR 时）；`unittest` 入口 149 项通过、
 2 项跳过。安装 OCR 后条件用例会变化。
 fixtures 的图片与期望标签在 `tests/fixtures/`，现有 10 组；holdout 只保留引用，避免两套标签源。
 
@@ -125,6 +128,7 @@ CI 对固定验证集跑 `--min-cases 2`、对真实 holdout 跑 `--min-cases 8`
 │  │  ├─ stability.py         # diff / median / 指针粗检
 │  │  └─ sampler.py           # 采集线程 + 识别线程 + 队列
 │  ├─ replay.py              # M1 单图回放 / fixtures / 草稿期望
+│  ├─ vision/annotation.py   # M3 归一化标注 schema / 缩放 / 原子写回
 │  ├─ __main__.py            # python -m app --replay
 │  ├─ kb/
 │  │  ├─ cards.py            # 卡牌加载 + 每英雄核心卡排序

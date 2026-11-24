@@ -8,12 +8,12 @@
 | 项目 | 当前值 | 说明 |
 | --- | --- | --- |
 | 主线版本 | `v0.2.3` | 已发布 GitHub Release |
-| 测试 | 150 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
+| 测试 | 161 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
 | 固定验证集 | 2 例 | `samples/validation/meta.json` |
 | fixture 回放 | 10 例 | `tests/fixtures/`；目标 10 已达成 |
 | 真实帧 holdout | 10 组 | `samples/validation/holdout/meta.json`；C 已作为真实失败样本入库 |
 | CI 准确率门槛 | 固定集 2 / holdout 8 | 10 组 holdout 留 2 组余量；门槛不再下调 |
-| 模板分组 | hd / fhd / qhd 已接入运行时 | 三组暂时共用 1800px 模板，**未按分辨率重采** |
+| 模板分组 | hd / fhd / qhd 已接入运行时，参考宽度与 matcher 独立 | 三组仍共用模板文件，**未按分辨率重采** |
 | 用户预设 | 未实现 | PRD 已定义，代码尚未落地 |
 
 当前结论只对应上述基线。任何“已通过”都必须在同一次运行中重新核验；无法当场核验的写
@@ -40,15 +40,18 @@
       门槛不再下调。
 - [x] CI 准确率报告单独输出流派标注覆盖和流派准确率（当前非空 3/10），不再只看英雄准确率。
 - [x] CI 增加 P95 预算（`--max-p95-ms 1000`），兜底路径的尾延迟变化会触发失败。
-- [ ] **M3 归一化标注**：按 [ADR-012](ADR.md) 扩展 `tests/fixtures/expected/*.json` 的可选
+- [x] **M3 归一化标注**：按 [ADR-012](ADR.md) 扩展 `tests/fixtures/expected/*.json` 的可选
       `annotation`（归一化 `x,y,w,h` + `base_resolution`），保持 M1 的唯一来源和英雄/流派断言；
       用同一批 fixtures 做跨分辨率断言，不新建第二套 annotations 目录。
-- [ ] 模板分组真正按分辨率重采，各自拥有 `reference_width`；未覆盖宽度显式回退 `hd`
+      `app/vision/annotation.py` 负责解析/缩放/原子写回，`tools/annotate_fixture.py` 提供最小
+      Tkinter 拖拽标注；`app/replay.py` 在 case 有 annotation 时使用归一化 ROI。
+- [x] 模板分组使用各自 matcher 对象和 `reference_width`（hd 1800 / fhd 1920 / qhd 2560）；
+      模板文件仍共享，不能据此宣称 4K 模板已重采。
+- [x] **M3 验证项**：修复 `screenshot_2560_80` 的流派分段失败（`run_count 13` → 8）；图标条
+      最小 run 宽按 `base_run_w * client_w / reference_width` 缩放，去掉 2560 宽下的细碎高光/文字 run。
+- [ ] 模板分组真正按分辨率重采，各自拥有独立模板文件；未覆盖宽度显式回退 `hd`
       并打印警告。
 - [ ] 在独立模板完成前，不对外宣称“已针对 4K 校准”。
-- [ ] **M3 验证项**：修复 `screenshot_2560_80` 的流派分段失败（`run_count 13` vs
-      期望 8）。这是 2560 宽相对 1800 基准的缩放缺陷，不单独先修；M3 用跨分辨率用例
-      一并验证，避免白做一遍。
 - [ ] **阈值重校准**：真实帧样本达到 30 组时重新标定 `FULL_NAME_MIN_SCORE` /
       `FULL_NAME_MIN_MARGIN`，记录 before/after；不得用当前 10 组反推“100% 通用”。
 
@@ -62,7 +65,7 @@ python tools/run_accuracy.py `
 ```
 
 pytest 每次输出 fixture 数/目标 10/缺口；fixture 阈值只能随样本增长上调，禁止下调。
-当前 10 组 holdout 全部通过，流派非空标签 3/10；样本增加后门槛按阶梯提高，不能为了绿灯降低门槛。
+当前 10 组 holdout 的英雄名/槽位全部通过，流派非空标签 3/10；样本增加后门槛按阶梯提高，不能为了绿灯降低门槛。
 
 ### 阶段二：用户预设最小可用闭环（未开始）
 

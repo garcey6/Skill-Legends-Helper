@@ -110,7 +110,7 @@ class AssetCacheTest(unittest.TestCase):
         self.assertIn("asset_provider=self._live_assets_for_width", source)
         self.assertIn(".for_width(client_width)", source)
 
-    def test_shared_templates_reuse_matchers_but_keep_group_identity(self) -> None:
+    def test_groups_have_independent_matchers_and_own_reference_width(self) -> None:
         cache = AssetCache(
             LAYOUT,
             ROOT / "data" / "recognize",
@@ -119,9 +119,12 @@ class AssetCacheTest(unittest.TestCase):
         )
         hd = cache.for_width(1280)
         qhd = cache.for_width(2560)
-        self.assertIs(hd.school_matcher, qhd.school_matcher)
-        self.assertIs(hd.glyph_matcher, qhd.glyph_matcher)
+        self.assertIsNot(hd.school_matcher, qhd.school_matcher)
+        self.assertIsNot(hd.glyph_matcher, qhd.glyph_matcher)
         self.assertNotEqual(hd.group.id, qhd.group.id)
+        self.assertNotEqual(hd.group.reference_width, qhd.group.reference_width)
+        self.assertEqual(hd.group.reference_width, 1800)
+        self.assertEqual(qhd.group.reference_width, 2560)
 
 
 if __name__ == "__main__":

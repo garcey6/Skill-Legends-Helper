@@ -149,6 +149,32 @@
   `tests/test_replay.py::FixtureDiscoveryTest::test_low_rank_character_is_recovered_by_full_name_fallback`。
 - **状态**：已实现；10 组真实 fixture 全部通过，低于 10 组不得据此宣称全面达标。
 
+## 2026-11-24 “关闭时零开销”只有描述，没有测量
+
+- **现象**：M2 文档写“关闭时识别路径零额外开销”，但测试只证明 `_maybe_debug` 在禁用时
+  提前 return，没有同一批 fixture 的开/关耗时对比。
+- **根因**：把“代码路径看起来没做事”当成“可测的开销为零”；没有基准就容易在后续重构中
+  悄悄把截图、建帧或 Tk 调用移到开关之前。
+- **正确做法**：固定 N≥20 的真实 fixture A/B；关闭路径的 hook 成本要与识别耗时同量级比较，
+  只构建 `DebugFrame` 的插桩开销设 5% 中位预算。调试窗口、截图和 PNG 保存属于“调试开启”
+  的显式成本，不混进“识别路径零开销”的结论。
+- **证据**：`tests/test_debug_benchmark.py`；当前 N=21，off 中位 276ms，on 中位 278ms，
+  插桩开销 0.55%；禁用 hook ≈0.08µs/次。
+- **状态**：已补测量；基准进入 pytest，CI 每次执行。
+
+## 2026-11-24 holdout 的“10 组”不等于“10 组流派断言”
+
+- **现象**：holdout 有 10 组，但只有 draft001、draft002、A 三组有非空 `schools`；其余 7 组
+  的流派字段是 `null`。CI 绿灯实际主要验证英雄名，流派只覆盖 3 组。
+- **根因**：门槛只数用例条数，不数每条上被断言的字段时间；`run_count 13` 这类流派缺陷
+  没有足够的非空标签接住。
+- **正确做法**：准确率报告同时输出 `schools_total` / `schools_unlabeled` /
+  `schools_accuracy`，并在 CI 日志打印“schools_labeled=N/cases”；要么补人工流派标注，
+  要么明确当前流派覆盖不足以证明回归。不能把用例数当成断言维度数。
+- **证据**：`tools/run_accuracy.py` 的 `compute_metrics` / `[accuracy]` 汇总；
+  `tests/test_accuracy.py` 的流派覆盖测试；当前 3/10。
+- **状态**：度量已加；7 组流派标签仍待人工补，不能用猜测填。
+
 ## 2026-11-21 “未核验”不是免责声明
 
 - **现象**：CI 日志、Release 资产、第三方依赖状态经常在没当场确认时被写成“应该没问题”。

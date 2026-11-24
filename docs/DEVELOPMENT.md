@@ -47,12 +47,16 @@ python -m pip install -r requirements.txt
 python -m pip install -r requirements-dev.txt   # pytest 只用于开发/CI
 python -m pytest -q
 python tools/validate_cases.py --strict
-python tools/run_accuracy.py --strict --min-cases 2
-python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8
+python tools/run_accuracy.py --strict --min-cases 2 --max-p95-ms 1000
+python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8 --max-p95-ms 1000
 ```
 
 pytest 每次尾部打印 `holdout 用例数：N / 目标 10，缺口 N`；fixture 阈值只升不降。
-当前 pytest **146 项通过、3 项按环境跳过**（未装 RapidOCR 时）；安装 OCR 后条件用例会变化。
+`[accuracy]` 汇总行同时输出 `schools_labeled=N/总组数` 和流派准确率，避免只看英雄名绿灯。
+`tests/test_debug_benchmark.py` 用 21 次真实 fixture A/B 测量关闭调试的代价；只构建
+`DebugFrame` 的插桩开销预算为 5% 中位数（不含调试窗口/截图/PNG 成本）。
+当前 pytest **150 项通过、3 项按环境跳过**（未装 RapidOCR 时）；`unittest` 入口 138 项通过、
+2 项跳过。安装 OCR 后条件用例会变化。
 fixtures 的图片与期望标签在 `tests/fixtures/`，现有 10 组；holdout 只保留引用，避免两套标签源。
 
 - 示例截图识别（3 英雄 / 8 启用 / 5 禁用）；

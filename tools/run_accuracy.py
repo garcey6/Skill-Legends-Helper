@@ -45,6 +45,8 @@ def compute_metrics(cases: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     names_total = 0
     names_correct = 0
     exact_cases = 0
+    schools_total = 0
+    schools_correct = 0
     latencies: List[float] = []
     failures: List[Dict[str, Any]] = []
 
@@ -75,6 +77,19 @@ def compute_metrics(cases: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
                 }
             )
 
+        expected_schools = case.get("expected_schools")
+        if expected_schools:
+            schools_total += 1
+            actual_schools = case.get("actual_schools") or {}
+            expected_enabled = set(expected_schools.get("enabled") or [])
+            actual_enabled = set(actual_schools.get("enabled") or [])
+            matches = actual_schools.get("status") == "ok" and expected_enabled == actual_enabled
+            expected_banned = expected_schools.get("banned")
+            if expected_banned is not None:
+                matches = matches and set(expected_banned) == set(actual_schools.get("banned") or [])
+            if matches:
+                schools_correct += 1
+
         latency = case.get("latency_ms")
         if latency is not None:
             latencies.append(float(latency))
@@ -88,6 +103,11 @@ def compute_metrics(cases: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
         "names_total": names_total,
         "names_correct": names_correct,
         "name_accuracy": names_correct / names_total if names_total else 0.0,
+        "schools_total": schools_total,
+        "schools_unlabeled": max(0, count - schools_total),
+        "schools_labeled_rate": schools_total / count if count else 0.0,
+        "schools_correct": schools_correct,
+        "schools_accuracy": schools_correct / schools_total if schools_total else 0.0,
         "exact_cases": exact_cases,
         "exact_case_rate": exact_cases / count if count else 0.0,
         "p50_ms": percentile(latencies, 50),
@@ -96,12 +116,16 @@ def compute_metrics(cases: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def strict_failure(metrics: Mapping[str, Any], min_cases: int = 0) -> bool:
+def strict_failure(
+    metrics: Mapping[str, Any], min_cases: int = 0, max_p95_ms: float = 0.0
+) -> bool:
     """Return True when a strict run should fail the build."""
     count = int(metrics.get("cases") or 0)
     if count == 0:
         return True
     if count < max(0, int(min_cases)):
+        return True
+    if max_p95_ms and float(metrics.get("p95_ms") or 0.0) > float(max_p95_ms):
         return True
     return bool(metrics.get("failures"))
 
@@ -128,14 +152,18 @@ def evaluate_validation(
 
     cases: List[Dict[str, Any]] = []
     for case in meta.get("cases", []):
-        expected = list(_case_expected(case, base).get("heroes") or [])
+        expected_payload = _case_expected(case, base)
+        expected = list(expected_payload.get("heroes") or [])
+        expected_schools = expected_payload.get("schools")
         path = base / case["client"]
         started = time.perf_counter()
         error: Optional[str] = None
         actual: List[Optional[str]] = []
+        actual_schools: Any = None
         try:
             result = run_image(str(path), assets)
             actual = [c.get("name") for c in result.get("heroes", {}).get("candidates", [])]
+            actual_schools = result.get("schools")
         except Exception as exc:  # keep one bad frame from hiding the rest
             error = f"{type(exc).__name__}: {exc}"
         latency_ms = round((time.perf_counter() - started) * 1000.0, 2)
@@ -145,6 +173,8 @@ def evaluate_validation(
                 "image": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path),
                 "expected": expected,
                 "actual": actual,
+                "expected_schools": expected_schools,
+                "actual_schools": actual_schools,
                 "latency_ms": latency_ms,
                 "error": error,
             }
@@ -169,13 +199,34 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=0,
         help="with --strict, require at least this many cases",
     )
+    parser.add_argument(
+        "--max-p95-ms",
+        type=float,
+        default=0.0,
+        help="with --strict, fail when P95 latency exceeds this budget (0 disables)",
+    )
     args = parser.parse_args(argv)
 
     report = evaluate_validation(args.meta, args.base)
+    metrics = report["metrics"]
     report["strict"] = {
         "min_cases": max(0, args.min_cases),
-        "failed": strict_failure(report["metrics"], args.min_cases),
+        "max_p95_ms": max(0.0, args.max_p95_ms),
+        "failed": strict_failure(metrics, args.min_cases, args.max_p95_ms),
     }
+    print(
+        "[accuracy] cases=%d hero=%.3f schools_labeled=%d/%d schools_acc=%.3f p50=%.1fms p95=%.1fms"
+        % (
+            int(metrics["cases"]),
+            float(metrics["name_accuracy"]),
+            int(metrics["schools_total"]),
+            int(metrics["cases"]),
+            float(metrics["schools_accuracy"]),
+            float(metrics["p50_ms"]),
+            float(metrics["p95_ms"]),
+        ),
+        file=sys.stderr,
+    )
     text = json.dumps(report, ensure_ascii=False, indent=2)
     print(text)
     if args.out:

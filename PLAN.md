@@ -8,7 +8,7 @@
 | 项目 | 当前值 | 说明 |
 | --- | --- | --- |
 | 主线版本 | `v0.2.3` | 已发布 GitHub Release |
-| 测试 | 146 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
+| 测试 | 150 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
 | 固定验证集 | 2 例 | `samples/validation/meta.json` |
 | fixture 回放 | 10 例 | `tests/fixtures/`；目标 10 已达成 |
 | 真实帧 holdout | 10 组 | `samples/validation/holdout/meta.json`；C 已作为真实失败样本入库 |
@@ -30,18 +30,27 @@
 - [x] 两条旧 holdout 用例迁入 `tests/fixtures/`，holdout 只保留引用，不维护第二套标签。
 - [x] M2 调试浮层：按需构建 `DebugFrame`（ROI、OCR、模板框、耗时、失败原因），
       Tkinter 置顶浮层可拖动、切换图层并保存标注 PNG；关闭时识别路径零额外开销。
+- [x] M2 零开销基准：N=21 真实 fixture A/B，关闭路径 hook ≈0.08µs/次；只构建 DebugFrame
+      的中位开销 0.55%（预算 5%），不包含调试窗口/截图/PNG 成本。
 - [x] 真实帧从 9 组补到 10 组（C 已作为真实失败样本入库；全名兜底识别），
       覆盖 1080p / 2K / 4K、无边框 / 窗口化、1–5 英雄、含“特权解锁 / 随机”的界面。
 - [x] 每组独立画面，禁止同屏连拍、重复帧、合成图充数；导入器按解码后 SHA-256 和
       尺寸+标签双重拒重。
 - [x] holdout 达到 8 组以上后，把 CI 的 `--min-cases` 从 6 提到 8；10 组时留 2 组余量，
       门槛不再下调。
+- [x] CI 准确率报告单独输出流派标注覆盖和流派准确率（当前非空 3/10），不再只看英雄准确率。
+- [x] CI 增加 P95 预算（`--max-p95-ms 1000`），兜底路径的尾延迟变化会触发失败。
+- [ ] **M3 归一化标注**：按 [ADR-012](ADR.md) 扩展 `tests/fixtures/expected/*.json` 的可选
+      `annotation`（归一化 `x,y,w,h` + `base_resolution`），保持 M1 的唯一来源和英雄/流派断言；
+      用同一批 fixtures 做跨分辨率断言，不新建第二套 annotations 目录。
 - [ ] 模板分组真正按分辨率重采，各自拥有 `reference_width`；未覆盖宽度显式回退 `hd`
       并打印警告。
 - [ ] 在独立模板完成前，不对外宣称“已针对 4K 校准”。
 - [ ] **M3 验证项**：修复 `screenshot_2560_80` 的流派分段失败（`run_count 13` vs
       期望 8）。这是 2560 宽相对 1800 基准的缩放缺陷，不单独先修；M3 用跨分辨率用例
       一并验证，避免白做一遍。
+- [ ] **阈值重校准**：真实帧样本达到 30 组时重新标定 `FULL_NAME_MIN_SCORE` /
+      `FULL_NAME_MIN_MARGIN`，记录 before/after；不得用当前 10 组反推“100% 通用”。
 
 **验收口径**：
 
@@ -49,11 +58,11 @@
 python -m pytest -q
 python tools/run_accuracy.py `
   --meta samples/validation/holdout/meta.json `
-  --strict --min-cases 8
+  --strict --min-cases 8 --max-p95-ms 1000
 ```
 
 pytest 每次输出 fixture 数/目标 10/缺口；fixture 阈值只能随样本增长上调，禁止下调。
-当前 10 组 holdout 全部通过；样本增加后门槛按阶梯提高，不能为了绿灯降低门槛。
+当前 10 组 holdout 全部通过，流派非空标签 3/10；样本增加后门槛按阶梯提高，不能为了绿灯降低门槛。
 
 ### 阶段二：用户预设最小可用闭环（未开始）
 

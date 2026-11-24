@@ -179,6 +179,32 @@
   `tests/test_replay.py::FixtureDiscoveryTest::test_low_rank_character_is_recovered_by_full_name_fallback`；
   `tests/test_accuracy.py` 10 组 holdout 计数。
 
+## ADR-012 fixture expected JSON 同时承载归一化标注，作为唯一来源
+
+- **日期**：2026-11-24
+- **状态**：已接受
+- **背景**：M3 需要归一化坐标与跨分辨率断言。现有 `tests/fixtures/expected/*.json` 只存英雄/流派标签；
+  如果另建 `annotations/` 目录，会重演 M1 消灭的“两套标签源”，只是分叉发生在几何层。
+- **决策**：`tests/fixtures/expected/*.json` 继续作为 fixture 的唯一来源，并增加**可选**字段
+  `annotation`：
+  ```json
+  {
+    "base_resolution": [1800, 1118],
+    "features": [
+      {"name": "hero_slot_1", "kind": "hero", "box": [0.1, 0.2, 0.3, 0.4]}
+    ]
+  }
+  ```
+  `box` 为归一化 `x, y, w, h`（0–1），`base_resolution` 记录标注时的图像尺寸；运行期按实际
+  客户区尺寸缩放。M1 的发现、英雄/流派断言和 `--generate-expected` 不变；M3 的几何断言直接读
+  同一份 expected，不再建第二套 fixture/annotation 目录。`layout.json` 仍是运行时 ROI 配置，
+  不把 fixture 标注写进运行时资产。
+- **备选**：新建 `tests/fixtures/annotations/`；expected 存绝对像素；把每张图的 ROI 写进 runtime layout。
+- **后果**：一个 fixture 只有一份标签；旧 expected 可继续省略 `annotation`，逐张迁移；M3 的标注工具
+  必须合并写入 existing expected，而不是覆盖英雄/流派字段。代价是 expected schema 变复杂，且跨分辨率
+  用例必须显式写 `base_resolution`，不能靠文件名猜。
+- **证据**：`tests/fixtures/expected/`、`app/replay.py`、`tests/test_replay.py`、`PLAN.md` M3。
+
 ## 决策索引
 
 | 编号 | 主题 | 状态 |
@@ -194,3 +220,4 @@
 | ADR-009 | M1 回放复用 FrameSource / fixtures 唯一来源 | 已接受 |
 | ADR-010 | M2 调试浮层：Tkinter + 只读 DebugFrame | 已接受 |
 | ADR-011 | 字模 top5 漏字时闭集全名兜底 | 已接受 |
+| ADR-012 | fixture expected JSON 承载归一化标注，唯一来源 | 已接受 |

@@ -23,8 +23,8 @@
 python -m pip install -r requirements-dev.txt
 python -m pytest -q
 python tools/validate_cases.py --strict
-python tools/run_accuracy.py --strict --min-cases 2
-python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8
+python tools/run_accuracy.py --strict --min-cases 2 --max-p95-ms 1000
+python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8 --max-p95-ms 1000
 python -m app --replay tests/fixtures/screenshots/draft001_1800x1118.png
 python -m tools.live_recognize --replay samples/frames/draft_001
 ```
@@ -80,8 +80,8 @@ python -m pytest -q
 python tools/validate_cases.py --strict
 ```
 
-涉及识别参数时再加 `python tools/run_accuracy.py --strict --min-cases 2`；涉及 holdout 时
-再加 `--meta samples/validation/holdout/meta.json --min-cases 8`。文档使用中文；用户可见文案也用中文，
+涉及识别参数时再加 `python tools/run_accuracy.py --strict --min-cases 2 --max-p95-ms 1000`；涉及 holdout 时
+再加 `--meta samples/validation/holdout/meta.json --min-cases 8 --max-p95-ms 1000`。文档使用中文；用户可见文案也用中文，
 技术标识符保持英文。
 
 小改（修 bug、调阈值、补测试）至少更新 [DEVELOPMENT_LOG](DEVELOPMENT_LOG.md) 和

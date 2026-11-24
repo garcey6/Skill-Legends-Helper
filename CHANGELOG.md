@@ -39,12 +39,19 @@
   2560×1390 四英雄截图（A/B/C/D），真实帧 holdout 从 2 组增至 10 组，CI holdout 门槛从 6
   提到 8；全屏素材只登记已核对的字段，未逐图标复核的流派统一记为 `null`。C 组作为
   “极寒掌控者”真实失败样本入库。
+- 新增 M2 零开销基准：21 次真实 fixture A/B，关闭路径 hook ≈0.08µs/次；只构建
+  `DebugFrame` 的中位插桩开销 0.55%（预算 5%，不含调试窗口/截图/PNG 成本）。
+- 准确率报告新增 `schools_total` / `schools_unlabeled` / `schools_accuracy`，CI 汇总行打印
+  流派标注覆盖（当前 3/10）；新增 `--max-p95-ms`，CI 用 1000ms 预算盯住兜底链路的尾延迟。
 - 新增 `requirements-dev.txt`（继承运行时依赖，精确锁定 `pytest==9.2.0`）；CI 分两步安装
   运行时/开发依赖并改用 pytest；PyInstaller 显式排除 pytest 与测试目录。
 
 ### 计划中
 
-- 真实帧 holdout 已达 10 组，继续扩到 50–100 组不同窗口、亮度、英雄数量。
+- M3 归一化标注：按 ADR-012 扩展 `tests/fixtures/expected/*.json` 的可选 `annotation`，
+  保持 expected 为唯一标注源，并用同一批 fixtures 做跨分辨率断言。
+- 真实帧 holdout 已达 10 组，继续扩到 50–100 组不同窗口、亮度、英雄数量；30 组时重新校准
+  `FULL_NAME_MIN_SCORE` / `FULL_NAME_MIN_MARGIN`。
 - 为 hd / fhd / qhd 重新采样独立模板，而不是共用 1800px 参考模板。
 - 代码签名、安装器与自动更新。
 

@@ -48,10 +48,10 @@ jobs:
         run: python tools/validate_cases.py --strict
 
       - name: Accuracy regression
-        run: python tools/run_accuracy.py --strict --min-cases 2 --out accuracy.json
+        run: python tools/run_accuracy.py --strict --min-cases 2 --max-p95-ms 1000 --out accuracy.json
 
       - name: Real-frame holdout
-        run: python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8 --out holdout_accuracy.json
+        run: python tools/run_accuracy.py --meta samples/validation/holdout/meta.json --strict --min-cases 8 --max-p95-ms 1000 --out holdout_accuracy.json
 
       - name: Upload accuracy reports
         if: always()

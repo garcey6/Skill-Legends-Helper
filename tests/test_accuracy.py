@@ -28,6 +28,41 @@ class AccuracyMetricsTest(unittest.TestCase):
         self.assertEqual(metrics["p95_ms"], 300.0)
         self.assertEqual(len(metrics["failures"]), 2)
 
+    def test_compute_metrics_reports_school_label_coverage_and_accuracy(self) -> None:
+        cases = [
+            {
+                "expected": ["A"],
+                "actual": ["A"],
+                "expected_schools": {"enabled": ["普攻流", "大招流"], "banned": ["闪避流"]},
+                "actual_schools": {
+                    "status": "ok",
+                    "enabled": ["普攻流", "大招流"],
+                    "banned": ["闪避流"],
+                },
+                "latency_ms": 100.0,
+            },
+            {
+                "expected": ["B"],
+                "actual": ["B"],
+                "expected_schools": {"enabled": ["中毒流"], "banned": None},
+                "actual_schools": {
+                    "status": "ok",
+                    "enabled": ["回复流"],
+                    "banned": ["闪避流"],
+                },
+                "latency_ms": 100.0,
+            },
+            {"expected": ["C"], "actual": ["C"], "expected_schools": None, "latency_ms": 100.0},
+        ]
+
+        metrics = compute_metrics(cases)
+
+        self.assertEqual(metrics["schools_total"], 2)
+        self.assertEqual(metrics["schools_unlabeled"], 1)
+        self.assertAlmostEqual(metrics["schools_labeled_rate"], 2 / 3)
+        self.assertEqual(metrics["schools_correct"], 1)
+        self.assertAlmostEqual(metrics["schools_accuracy"], 0.5)
+
     def test_percentile_uses_nearest_rank(self) -> None:
         self.assertEqual(percentile([], 50), 0.0)
         self.assertEqual(percentile([10.0, 20.0, 30.0], 50), 20.0)
@@ -49,6 +84,11 @@ class AccuracyMetricsTest(unittest.TestCase):
         failed = compute_metrics([{"expected": ["A"], "actual": [None], "latency_ms": 1}])
         self.assertTrue(strict_failure(failed, min_cases=1))
 
+    def test_strict_failure_can_enforce_a_p95_budget(self) -> None:
+        metrics = compute_metrics([{"expected": ["A"], "actual": ["A"], "latency_ms": 1200}])
+        self.assertTrue(strict_failure(metrics, min_cases=1, max_p95_ms=1000))
+        self.assertFalse(strict_failure(metrics, min_cases=1, max_p95_ms=1500))
+
 
 class CurrentValidationCasesTest(unittest.TestCase):
     def test_current_validation_cases_match(self) -> None:
@@ -69,6 +109,8 @@ class CurrentValidationCasesTest(unittest.TestCase):
         self.assertEqual(report["metrics"]["cases"], 10)
         self.assertTrue(all(case["expected"] for case in report["cases"]))
         self.assertEqual(report["metrics"]["failures"], [])
+        self.assertEqual(report["metrics"]["schools_total"], 3)
+        self.assertEqual(report["metrics"]["schools_unlabeled"], 7)
 
 
 if __name__ == "__main__":

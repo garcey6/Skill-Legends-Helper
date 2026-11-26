@@ -53,6 +53,7 @@ def load_assets(
         "ocr_matcher": bundle.ocr_matcher,
         "school_by_name": {s["name"]: s["id"] for s in advisor.schools},
         "template_group": bundle.group.to_dict(),
+        "cache": cache,
     }
 
 
@@ -156,10 +157,25 @@ def run_replay(path: str, assets: Dict[str, Any], frames: int = 5) -> Dict[str, 
     return clean_result(result, "replay", seq.get("frame_id", 0), state, seq["stability"], {"ok": True, "replay": path})
 
 
+def _bundle_for(assets: Dict[str, Any], width: int) -> Dict[str, Any]:
+    """Use the same width-selected matcher bundle as the live path."""
+    cache = assets.get("cache")
+    if cache is None:
+        return assets
+    bundle = cache.for_width(width)
+    return {
+        **assets,
+        "school_matcher": bundle.school_matcher,
+        "glyph_matcher": bundle.glyph_matcher,
+        "ocr_matcher": bundle.ocr_matcher,
+    }
+
+
 def run_image(path: str, assets: Dict[str, Any]) -> Dict[str, Any]:
     source = ImageFrameSource(path)
     seq = capture_sequence(source, assets["layout"], 1)
     state = seq["state"]
+    assets = _bundle_for(assets, state.client_w)
     rec = recognize_rois(
         seq["icons"],
         seq["nameplates"],
@@ -188,6 +204,7 @@ def run_live(assets: Dict[str, Any], frames: int = 5) -> Dict[str, Any]:
     seq = capture_sequence(source, assets["layout"], frames)
     if "error" in seq:
         return {"ok": False, "error": seq["error"], "state": source.state().__dict__}
+    assets = _bundle_for(assets, state.client_w)
     rec = recognize_rois(
         seq["icons"],
         seq["nameplates"],

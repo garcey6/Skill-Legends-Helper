@@ -3,12 +3,12 @@
 > 项目分阶段计划与验收门槛。本文只记录**要做什么、做到什么程度算完成**；具体规范见
 > [RULES](RULES.md)，历史决策见 [ADR](ADR.md)，架构约束见 [ARCHITECTURE](ARCHITECTURE.md)。
 
-## 1. 事实基线（2026-11-23）
+## 1. 事实基线（2026-11-26）
 
 | 项目 | 当前值 | 说明 |
 | --- | --- | --- |
 | 主线版本 | `v0.2.3` | 已发布 GitHub Release |
-| 测试 | 161 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
+| 测试 | 166 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
 | 固定验证集 | 2 例 | `samples/validation/meta.json` |
 | fixture 回放 | 10 例 | `tests/fixtures/`；目标 10 已达成 |
 | 真实帧 holdout | 10 组 | `samples/validation/holdout/meta.json`；C 已作为真实失败样本入库 |

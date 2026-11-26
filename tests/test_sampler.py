@@ -13,6 +13,7 @@ from app.kb.recommend import Advisor
 from app.live.frame import Frame, SourceState
 from app.live.replaysrc import ImageFrameSource
 from app.live.sampler import LiveSampler, consistent_frames
+from app.live.stability import diff_ratio_masked, roi_overlap_rects
 from app.vision.glyphs import GlyphMatcher
 from app.vision.schools import SchoolMatcher
 
@@ -163,6 +164,117 @@ class SamplerTest(unittest.TestCase):
         self.assertTrue(sampler._select_assets(1280))
         self.assertFalse(sampler._select_assets(2560))
         self.assertIs(sampler._assets, good)
+
+
+class HudOverlaySource(ImageFrameSource):
+    """The real draft plus a HUD-shaped patch while the overlay is visible."""
+
+    def __init__(self, path, icons_roi) -> None:
+        super().__init__(path)
+        self.icons_roi = tuple(icons_roi)
+        self.hud_visible = True
+        self.capture_count = 0
+
+    def grab(self, roi):
+        frame = super().grab(roi)
+        if frame is not None and tuple(roi) == self.icons_roi and self.hud_visible:
+            image = frame.image.copy()
+            height, width = image.shape[:2]
+            patch = min(160, max(1, width // 5))
+            image[0:25, width - patch:width] = (20, 28, 38)
+            frame = Frame(image, frame.frame_id, frame.timestamp, frame.roi, frame.source)
+        return frame
+
+
+class HudMaskTest(unittest.TestCase):
+    def _sampler(self, mask_provider=None) -> LiveSampler:
+        advisor = Advisor()
+        matcher = SchoolMatcher(SCHOOLS, float(LAYOUT.get("margin_min", 0.012)))
+        glyph = GlyphMatcher(GLYPHS, [h["name"] for h in advisor.heroes])
+        return LiveSampler(
+            ImageFrameSource(ROOT / "samples" / "draft_001.png"),
+            LAYOUT,
+            matcher,
+            glyph,
+            lambda state, result: None,
+            interval_ms=30,
+            mask_provider=mask_provider,
+        )
+
+    def test_masked_diff_ignores_the_overlay_only(self) -> None:
+        clean = np.zeros((20, 40, 3), dtype=np.uint8)
+        dirty = clean.copy()
+        dirty[0:10, 10:20] = 255
+        self.assertGreater(diff_ratio_masked(dirty, clean), 0.0)
+        self.assertEqual(diff_ratio_masked(dirty, clean, [(10, 0, 20, 10)]), 0.0)
+
+    def test_roi_overlap_uses_client_origin_and_roi(self) -> None:
+        # 100x50 client at screen (1000, 200); icon ROI is the bottom strip.
+        rects = roi_overlap_rects(
+            (0.2, 0.8, 0.6, 1.0),
+            (100, 50),
+            (1000, 200),
+            (1010, 225, 1060, 260),
+        )
+        self.assertEqual(rects, [(0, 0, 40, 20)])
+
+    def test_sampler_does_not_recapture_when_only_the_hud_changed(self) -> None:
+        advisor = Advisor()
+        matcher = SchoolMatcher(SCHOOLS, float(LAYOUT.get("margin_min", 0.012)))
+        glyph = GlyphMatcher(GLYPHS, [h["name"] for h in advisor.heroes])
+        icons_roi = tuple(LAYOUT["rois"]["icons"])
+        source = HudOverlaySource(ROOT / "samples" / "draft_001.png", icons_roi)
+
+        def before_capture() -> None:
+            source.capture_count += 1
+            source.hud_visible = False
+
+        def after_capture() -> None:
+            source.hud_visible = True
+
+        def mask_provider(client_w: int, client_h: int, roi: tuple):
+            del client_h, roi
+            width = int(round((icons_roi[1] - icons_roi[0]) * client_w))
+            patch = min(160, max(1, width // 5))
+            return [(width - patch, 0, width, 25)]
+
+        sampler = LiveSampler(
+            source,
+            LAYOUT,
+            matcher,
+            glyph,
+            lambda state, result: None,
+            interval_ms=30,
+            before_capture=before_capture,
+            after_capture=after_capture,
+            mask_provider=mask_provider,
+        )
+        sampler.start()
+        time.sleep(1.5)
+        sampler.stop()
+        time.sleep(0.1)
+        self.assertEqual(source.capture_count, 1)
+
+    def test_repeated_capture_is_suppressed_when_hud_overlaps(self) -> None:
+        clean = np.zeros((40, 200, 3), dtype=np.uint8)
+        dirty = clean.copy()
+        # The HUD occupies this patch while probing; it is not a draft change.
+        dirty[0:20, 150:200] = (20, 28, 38)
+        sampler = self._sampler(
+            mask_provider=lambda client_w, client_h, roi: roi_overlap_rects(
+                roi,
+                (client_w, client_h),
+                (0, 0),
+                (150, 0, 200, 20),
+            )
+        )
+        sampler._last_icons = clean
+        sampler._last_names = clean
+        self.assertTrue(sampler._probe_is_same(dirty, 200, 40, (0.0, 1.0, 0.0, 1.0)))
+        unmasked = self._sampler()
+        unmasked._last_icons = clean
+        unmasked._last_names = clean
+        self.assertFalse(unmasked._probe_is_same(dirty, 200, 40, (0.0, 1.0, 0.0, 1.0)))
 
 
 if __name__ == "__main__":

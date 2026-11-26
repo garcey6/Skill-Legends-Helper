@@ -19,6 +19,14 @@ class FakeHud:
         self.visible = True
         self.ready_calls = 0
         self.shown = []
+        self.last_image = Image.new("RGB", (620, 500))
+        self.last_position = (1920, 900)
+
+    def screen_rect(self):
+        if not self.visible:
+            return None
+        x, y = self.last_position
+        return (x, y, x + self.last_image.width, y + self.last_image.height)
 
     def show_ready(self, _url: str) -> None:
         self.ready_calls += 1
@@ -85,6 +93,16 @@ class LiveHudStateTest(unittest.TestCase):
         agent._handle_live("IDLE", None)
         self.assertEqual(agent.hud.ready_calls, 1)
         self.assertFalse(agent._live_has_result)
+
+    def test_live_mask_ignores_the_hud_overlap_in_the_icon_roi(self) -> None:
+        agent = _make_agent()
+        agent.live_source = mock.Mock(hwnd=77)
+        with mock.patch.object(agent_module.capture, "client_box", return_value=(0, 0, 2560, 1600)):
+            rects = agent._live_mask_rects(2560, 1600, (0.18, 0.88, 0.86, 0.995))
+        self.assertEqual(rects, [(1459, 0, 1792, 24)])
+
+        agent.hud.visible = False
+        self.assertEqual(agent._live_mask_rects(2560, 1600, (0.18, 0.88, 0.86, 0.995)), [])
 
     def test_same_draft_restores_the_last_result_after_a_gap(self) -> None:
         agent = _make_agent()

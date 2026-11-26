@@ -58,7 +58,7 @@ pytest 每次尾部打印 `holdout 用例数：N / 目标 10，缺口 N`；fixtu
 `[accuracy]` 汇总行同时输出 `schools_labeled=N/总组数` 和流派准确率，避免只看英雄名绿灯。
 `tests/test_debug_benchmark.py` 用 21 次真实 fixture A/B 测量关闭调试的代价；只构建
 `DebugFrame` 的插桩开销预算为 5% 中位数（不含调试窗口/截图/PNG 成本）。
-当前 pytest **161 项通过、3 项按环境跳过**（未装 RapidOCR 时）；`unittest` 入口 149 项通过、
+当前 pytest **166 项通过、3 项按环境跳过**（未装 RapidOCR 时）；`unittest` 入口 154 项通过、
 2 项跳过。安装 OCR 后条件用例会变化。
 fixtures 的图片与期望标签在 `tests/fixtures/`，现有 10 组；holdout 只保留引用，避免两套标签源。
 

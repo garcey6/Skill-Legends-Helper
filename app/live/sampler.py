@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 import numpy as np
 
 from .frame import FrameSource, SourceState
-from .stability import diff_ratio, drop_cursor_frames, is_still, median_stack
+from .stability import diff_ratio_masked, drop_cursor_frames, is_still, median_stack
 from ..vision.blobs import segment_runs
 from ..vision.pipeline import recognize_rois
 
@@ -39,6 +39,7 @@ class LiveSampler:
         before_capture: Optional[Callable[[], None]] = None,
         after_capture: Optional[Callable[[], None]] = None,
         asset_provider: Optional[Callable[[int], Any]] = None,
+        mask_provider: Optional[Callable[[int, int, Tuple], Any]] = None,
     ) -> None:
         self.source = source
         self.layout = layout
@@ -49,6 +50,7 @@ class LiveSampler:
         self.before_capture = before_capture
         self.after_capture = after_capture
         self.asset_provider = asset_provider
+        self.mask_provider = mask_provider
         self._assets: Any = None
         self.interval = max(0.05, interval_ms / 1000.0)
         self._stop = threading.Event()
@@ -137,6 +139,26 @@ class LiveSampler:
             min_width=max(2, int(float(self.layout.get("min_run_w", 20)) * client_w / self._reference_width() / 2)),
         )
 
+    def _mask_rects(self, client_w: int, client_h: int, roi: Tuple) -> list:
+        if self.mask_provider is None:
+            return []
+        try:
+            return list(self.mask_provider(int(client_w), int(client_h), tuple(roi)) or [])
+        except Exception:
+            return []
+
+    def _probe_is_same(
+        self,
+        icons_image: np.ndarray,
+        client_w: int,
+        client_h: int,
+        icons_roi: Tuple,
+    ) -> bool:
+        if self._last_icons is None or self._last_names is None or self._force.is_set():
+            return False
+        masks = self._mask_rects(client_w, client_h, icons_roi)
+        return diff_ratio_masked(icons_image, self._last_icons, masks) < 0.008
+
     def _clear_round(self) -> None:
         self._last_fingerprint = ""
         self._last_icons = None
@@ -177,15 +199,11 @@ class LiveSampler:
                 self._emit("DEGRADED")
                 self._stop.wait(0.7)
                 continue
-            if (
-                self._last_icons is not None
-                and self._last_names is not None
-                and not self._force.is_set()
-                # Do not compare nameplate pixels here: the overlay may cover
-                # part of the nameplate ROI while the probe runs, but the last
-                # accepted frame was captured with the overlay hidden.  Comparing
-                # the two made a stable draft capture forever (and flicker).
-                and diff_ratio(icons_frame.image, self._last_icons) < 0.008
+            if self._probe_is_same(
+                icons_frame.image,
+                client_w,
+                state.client_h or icons_frame.image.shape[0],
+                icons_roi,
             ):
                 self._state = "READY"
                 self._emit("READY")

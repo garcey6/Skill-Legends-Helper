@@ -30,6 +30,7 @@ capture.enable_dpi_awareness()
 from app.config import BASE_DIR  # noqa: E402
 from app.kb.recommend import Advisor  # noqa: E402
 from app.live.sampler import LiveSampler  # noqa: E402
+from app.live.stability import roi_overlap_rects  # noqa: E402
 from app.live.win32src import WindowFrameSource  # noqa: E402
 from app.overlay.hotkey import MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, MOD_WIN, HotkeyManager, parse_combo  # noqa: E402
 from app.overlay.debug import DebugOverlay  # noqa: E402
@@ -228,6 +229,7 @@ class Agent:
             asset_provider=self._live_assets_for_width,
             before_capture=self._before_live_capture,
             after_capture=self._after_live_capture,
+            mask_provider=self._live_mask_rects,
         )
         self.live_sampler.start()
         print("自动识别已开启：进入选人界面后无需按键。", flush=True)
@@ -238,6 +240,34 @@ class Agent:
         bundle = self.live_asset_cache.for_width(client_width)
         self.live_assets = bundle
         return bundle
+
+    def _live_mask_rects(self, client_w: int, client_h: int, roi: tuple) -> list:
+        """Ignore the part of the icon ROI currently covered by the HUD.
+
+        The HUD is topmost and is restored before probing, while the last
+        accepted icon strip was captured with it hidden.  Without this mask the
+        overlap alone looks like a draft change, so the sampler would hide and
+        restore the HUD forever.
+        """
+        hud = getattr(self, "hud", None)
+        if hud is None or not getattr(hud, "visible", False):
+            return []
+        overlay = hud.screen_rect()
+        if overlay is None:
+            return []
+        hwnd = getattr(self.live_source, "hwnd", None) or getattr(self, "last_game_hwnd", None)
+        if not hwnd:
+            return []
+        try:
+            box = capture.client_box(hwnd)
+        except Exception:
+            return []
+        return roi_overlap_rects(
+            roi,
+            (client_w, client_h),
+            (int(box[0]), int(box[1])),
+            overlay,
+        )
 
     def _before_live_capture(self) -> None:
         """Hide the overlay before the 5-frame ROI aggregate (Tk thread hop)."""

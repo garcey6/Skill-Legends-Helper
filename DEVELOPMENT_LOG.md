@@ -187,4 +187,18 @@
   `tests/test_annotation.py`、`tests/test_scaling.py`、`tests/test_template_groups.py`。
 - **状态**：M3 归一化标注、跨分辨率断言、2560 run 数修复已完成；独立模板重采仍未做。
 
+## 2026-11-26 浮窗遮挡图标条被误判成“换人”
+
+- **现象**：已经显示识别结果后，浮窗仍周期性闪一下；日志里并没有新英雄。
+- **根因**：`_last_icons` 是隐藏浮窗后采到的干净帧，下一次探针却是在浮窗可见时抓的。
+  多英雄浮窗底部会压住图标 ROI 的上沿，遮挡本身足以超过 `diff_ratio` 的 0.008 阈值，
+  于是每个探针都触发一次 5 帧抓取；每次抓取都要隐藏/恢复浮窗。
+- **正确做法**：探针比较前用 `roi_overlap_rects` 把浮窗屏幕矩形与图标 ROI 求交，
+  再用 `diff_ratio_masked` 排除交集；浮窗位置从 `Hud.last_position` / `last_image` 的缓存读取，
+  不在抓帧线程碰 Tk。不要靠“禁止用户把浮窗拖到图标上”来规避。
+- **证据**：`app/live/stability.py`、`app/live/sampler.py`、`agent.py`、
+  `tests/test_sampler.py`（遮挡合成源只抓一次）、`tests/test_live_hud_state.py`（ROI 交集）。
+- **状态**：已修；浮窗仍会在第一次需要抓新结果时短暂隐藏，这是抓干净帧的必要成本，
+  但不再因结果不变而周期性闪。
+
 ## 2026-11-21 “未核验”不是免责声明

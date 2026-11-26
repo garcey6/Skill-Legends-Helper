@@ -70,7 +70,8 @@ tools/*                       单向生成资产、回放验收、准确率、�
 
 浮窗隐藏由 `Agent._before_live_capture` 通过 `root.after(0, ...)` 投递到 Tk 线程，并用
 `_capture_gate` 等待；抓完由 `_after_live_capture` 恢复。实时结果经 `live_queue` 回主线程，
-只允许主线程调用 `hud.show`。
+只允许主线程调用 `hud.show`。探针比较会通过 `roi_overlap_rects` + `diff_ratio_masked` 排除
+当前浮窗覆盖区；否则浮窗压住图标条会被误判为换人，反复隐藏/恢复并造成频闪。
 
 ## 4. 识别数据流
 

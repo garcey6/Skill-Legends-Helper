@@ -584,6 +584,13 @@ class Hud:
         self._scroll_offset = 0
         self._render_viewport()
 
+    def screen_rect(self) -> Optional[Tuple[int, int, int, int]]:
+        """Cached screen rectangle; safe to read from the capture thread."""
+        if not self.visible or self.last_image is None:
+            return None
+        x, y = self.last_position
+        return (int(x), int(y), int(x) + self.last_image.width, int(y) + self.last_image.height)
+
     def hide(self) -> None:
         self.root.withdraw()
         self.visible = False

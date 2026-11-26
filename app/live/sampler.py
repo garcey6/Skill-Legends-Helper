@@ -266,6 +266,11 @@ class LiveSampler:
                 "dropped_frames": len(drop_icons) + len(drop_names),
                 "drop_reasons": sorted(set(drop_icons + drop_names)),
             }
+            # Record the accepted clean frames before handing them to the
+            # recognition thread.  Otherwise a slow recognition pass leaves
+            # _last_icons empty, and the next probe starts a second burst.
+            self._last_icons = icon_stack
+            self._last_names = name_stack
             item: CaptureItem = (
                 state,
                 icon_stack,

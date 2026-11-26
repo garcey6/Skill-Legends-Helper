@@ -97,7 +97,9 @@
       state.status = status;
       updateStatus(status);
       const params = new URLSearchParams(window.location.search);
-      if (params.get("demo") === "1" && status.sample) {
+      if (params.get("open") === "guides") {
+        await openGuides();
+      } else if (params.get("demo") === "1" && status.sample) {
         setTimeout(loadSample, 200);
       }
     } catch (err) {

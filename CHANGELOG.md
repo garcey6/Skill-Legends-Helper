@@ -7,6 +7,8 @@
 
 ### 新增
 
+- 启动流程简化：`启动助手.bat` 直接启动浮窗，不再显示 1/2/3/4 模式菜单；浮窗右上角新增
+  「设置 / 攻略库」按钮，按需打开本地网页的攻略编辑界面，启动时不再自动打开浏览器。
 - M1 静态回放：复用 `FrameSource` 增加 `CaptureSource` / `StaticFrameSource` 兼容别名，
   新增 `python -m app --replay <截图>` 和 `--generate-expected`，fixtures 自动发现并逐条断言
   英雄、流派与可选置信度下限。

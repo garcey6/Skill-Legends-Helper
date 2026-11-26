@@ -15,6 +15,7 @@ import sys
 import threading
 import time
 import traceback
+import webbrowser
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -27,7 +28,7 @@ from app.overlay import capture  # noqa: E402
 
 capture.enable_dpi_awareness()
 
-from app.config import BASE_DIR  # noqa: E402
+from app.config import BASE_DIR, guide_editor_url  # noqa: E402
 from app.kb.recommend import Advisor  # noqa: E402
 from app.live.sampler import LiveSampler  # noqa: E402
 from app.live.stability import roi_overlap_rects  # noqa: E402
@@ -154,6 +155,7 @@ class Agent:
             capture_key=self.capture_key,
             toggle_key=self.toggle_key,
             quit_key=self.quit_key,
+            settings_command=self.open_guide_editor,
         )
         self.recognizer = Recognizer()
         self.advisor = Advisor()
@@ -303,6 +305,17 @@ class Agent:
             self.hud.show(self.hud.last_source, self.last_game_hwnd)
         else:
             self.hud.show_ready(self.server_url)
+
+    def open_guide_editor(self) -> None:
+        """Open the local console directly on the custom guide editor."""
+        if self.httpd is None:
+            print("攻略库网页未启动（--no-server），无法打开。", flush=True)
+            return
+        url = guide_editor_url(self.server_url)
+        try:
+            webbrowser.open(url)
+        except Exception as exc:
+            print("打开攻略库失败：%s（可手动访问 %s）" % (exc, url), flush=True)
 
     def start_server(self) -> None:
         if self.args.no_server:

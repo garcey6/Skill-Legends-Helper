@@ -35,6 +35,11 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
 }
 
 
+def guide_editor_url(base_url: str) -> str:
+    """Deep-link the local console to its hero-guide editor modal."""
+    return str(base_url).rstrip("/") + "/?open=guides"
+
+
 def load_json(path: Path, default: Any = None) -> Any:
     try:
         with path.open("r", encoding="utf-8") as fh:

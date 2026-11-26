@@ -16,10 +16,12 @@ class LauncherTest(unittest.TestCase):
         self.assertFalse((ROOT / "启动网页版.bat").exists())
         self.assertFalse((ROOT / "打开设置.bat").exists())
 
-    def test_launcher_has_menu(self) -> None:
+    def test_launcher_starts_overlay_directly(self) -> None:
         text = (ROOT / "启动助手.bat").read_text(encoding="utf-8")
-        for token in ("agent.py", "run.py", "http://127.0.0.1:8777", "choice"):
-            self.assertIn(token, text)
+        self.assertIn("agent.py --port 8777", text)
+        self.assertNotIn("run.py", text)
+        self.assertNotIn("choice", text)
+        self.assertNotIn(":menu", text)
 
     def test_hero_warning_for_one_hero(self) -> None:
         self.assertEqual(agent.hero_warning([{"name": "森林游侠"}]), "")

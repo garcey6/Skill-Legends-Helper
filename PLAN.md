@@ -8,12 +8,13 @@
 | 项目 | 当前值 | 说明 |
 | --- | --- | --- |
 | 主线版本 | `v0.2.3` | 已发布 GitHub Release |
-| 测试 | 166 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
+| 测试 | 172 项通过，3 项按环境跳过 | pytest；安装 RapidOCR/OpenCV 后数量变化 |
 | 固定验证集 | 2 例 | `samples/validation/meta.json` |
 | fixture 回放 | 10 例 | `tests/fixtures/`；目标 10 已达成 |
 | 真实帧 holdout | 10 组 | `samples/validation/holdout/meta.json`；C 已作为真实失败样本入库 |
 | CI 准确率门槛 | 固定集 2 / holdout 8 | 10 组 holdout 留 2 组余量；门槛不再下调 |
 | 模板分组 | hd / fhd / qhd 已接入运行时，参考宽度与 matcher 独立 | 三组仍共用模板文件，**未按分辨率重采** |
+| 启动/攻略入口 | `启动助手.bat` 直启浮窗；浮窗右上角「设置 / 攻略库」按需打开网页编辑 | 不再显示模式菜单，也不在启动时自动开浏览器 |
 | 用户预设 | 未实现 | PRD 已定义，代码尚未落地 |
 
 当前结论只对应上述基线。任何“已通过”都必须在同一次运行中重新核验；无法当场核验的写

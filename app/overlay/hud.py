@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import tkinter as tk
 from PIL import Image, ImageDraw, ImageFont, ImageTk
@@ -43,6 +43,10 @@ FONT_BOLD = r"C:\Windows\Fonts\msyhbd.ttc"
 FONT_FALLBACK = r"C:\Windows\Fonts\simhei.ttf"
 
 _font_cache: Dict[Tuple[int, bool], ImageFont.FreeTypeFont] = {}
+
+
+def _hex(color: Tuple[int, int, int]) -> str:
+    return "#%02x%02x%02x" % color
 
 
 def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
@@ -183,7 +187,8 @@ def _common_header(draw: ImageDraw.ImageDraw, title: str, right: str = "") -> No
     draw.rectangle([0, 0, WIDTH, 3], fill=GOLD)
     draw.text((22, 16), title, font=_font(12, True), fill=GOLD_DIM)
     if right:
-        draw.text((WIDTH - 22, 17), right, font=_font(11), fill=DIM, anchor="ra")
+        # Leave room for the live "设置 / 攻略库" button at the right edge.
+        draw.text((WIDTH - 140, 17), right, font=_font(11), fill=DIM, anchor="ra")
 
 
 def render_ready(
@@ -412,6 +417,7 @@ class Hud:
         capture_key: str = "F8",
         toggle_key: str = "F9",
         quit_key: str = "Ctrl+Alt+Q",
+        settings_command: Optional[Callable[[], None]] = None,
     ) -> None:
         self.capture_key = capture_key
         self.toggle_key = toggle_key
@@ -426,6 +432,26 @@ class Hud:
         self.canvas = tk.Canvas(self.root, bd=0, highlightthickness=0, bg="#0e141c", cursor="fleur")
         self.canvas.pack()
         self.image_item = self.canvas.create_image(0, 0, anchor="nw")
+        self.settings_command = settings_command
+        self.settings_button: Optional[tk.Button] = None
+        if settings_command is not None:
+            self.settings_button = tk.Button(
+                self.root,
+                text="设置 / 攻略库",
+                command=settings_command,
+                font=("Microsoft YaHei UI", 9),
+                bg=_hex(PANEL),
+                fg=_hex(GOLD),
+                activebackground=_hex(PANEL_2),
+                activeforeground=_hex(TEXT),
+                relief="flat",
+                bd=0,
+                highlightthickness=1,
+                highlightbackground=_hex(BORDER),
+                cursor="hand2",
+            )
+            self.settings_button.bind("<Enter>", lambda _e: self.settings_button.configure(bg=_hex(PANEL_2)))
+            self.settings_button.bind("<Leave>", lambda _e: self.settings_button.configure(bg=_hex(PANEL)))
         self.root.withdraw()
         self.root.update_idletasks()
         # A 620px card is comfortable at 1080p; scale it up on 1440p/1600p
@@ -534,6 +560,18 @@ class Hud:
         self._render_viewport()
         return "break"
 
+    def _place_settings_button(self, width: int) -> None:
+        if self.settings_button is None:
+            return
+        button_w = max(112, int(round(118 * self.scale)))
+        button_h = max(24, int(round(24 * self.scale)))
+        self.settings_button.place(
+            x=max(8, width - button_w - 10),
+            y=10,
+            width=button_w,
+            height=button_h,
+        )
+
     def _render_viewport(self) -> None:
         if self._full_image is None:
             return
@@ -555,6 +593,7 @@ class Hud:
         self.photo = ImageTk.PhotoImage(view)
         self.canvas.config(width=view.width, height=view.height)
         self.canvas.itemconfigure(self.image_item, image=self.photo)
+        self._place_settings_button(view.width)
         x, y = self._place(
             view,
             self._game_hwnd,
